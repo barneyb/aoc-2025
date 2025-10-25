@@ -1,6 +1,6 @@
 # aoc-2025
 
-Advent of Code 2025 solvers, with some solvers from earlier years as warmup. If you don't know what Advent of Code is, you should go see! It's both lovely, and will help make sense of this repo. :)
+Advent of Code 2025 solvers, with some solvers from earlier years as warmup. If you don't know what [Advent of Code](https://adventofcode.com/) is, you should go see! It's both lovely, and will help make sense of this repo. :)
 
 https://github.com/barneyb/aoc2017 has an index of all years' repositories.
 
