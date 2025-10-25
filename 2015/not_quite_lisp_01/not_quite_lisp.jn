@@ -1,0 +1,22 @@
+pub fn main() {
+    int floor = 0;
+    int firstDescent = -1;
+    int pos = 0;
+    while !iseof() {
+        char c = getchar();
+        pos = pos + 1;
+        if c == '(' {
+            floor = floor + 1;
+            again;
+        }
+        if c != ')' { done; }
+        floor = floor - 1;
+        if floor == -1 {
+            if firstDescent < 0 {
+                firstDescent = pos;
+            }
+        }
+    }
+    printf("Final floor: %d\n", floor);
+    printf("First descent: %d\n", firstDescent);
+}
