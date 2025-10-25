@@ -1,0 +1,98 @@
+# a follows z, and skip i, l, and o.
+char* SUCCESSORS = "bcdefghjjkmmnppqrstuvwxyza"; # char[] lookup; SUCCESSORS['m' - 'a'] == 'n'
+
+pub fn main() {
+    char* pw = readLine(); # char[8]
+    printf("Initial Password: '%s'\n", pw);
+    findNext(pw);
+    printf("Next Password   : '%s'\n", pw);
+    findNext(pw);
+    printf("Third Password  : '%s'\n", pw);
+    free(pw);
+}
+
+fn findNext(char* pw) {
+    increment(pw);
+    while !isValidPassword(pw) {
+        increment(pw);
+    }
+}
+
+fn isValidPassword(char* pw) {
+    # two passes is less efficient, but rather simpler
+    if pairCount(pw) < 2 { return false; }
+    if !hasRunOfThree(pw) { return false; }
+    return true;
+}
+
+fn pairCount(char* pw) {
+    int n = 0;
+    char prev = *pw;
+    int i = 1;
+    while i < 8 {
+        char* d = pw + i;
+        char c = *d;
+        if c == prev {
+            # found a pair
+            n = n + 1;
+            c = null; # have to be non-overlapping; null will never match
+        }
+        i = i + 1;
+        prev = c;
+    }
+    return n;
+}
+
+fn hasRunOfThree(char* pw) {
+    int i = 1; # start at the second char
+    char* d = pw + i;
+    char prev = *d;
+    i = i + 1;
+    d = pw + i;
+    char curr = *d;
+    while i < 8 {
+        if curr == prev + 1 {
+            d = pw + i - 2;
+            char c = *d;
+            if prev == c + 1 {
+                return true;
+            }
+        }
+        prev = curr;
+        i = i + 1;
+        d = pw + i;
+        curr = *d;
+    }
+    return false;
+}
+
+fn increment(char* pw) {
+    int i = 7; # start at the end
+    while i >= 0 {
+        char* d = pw + i;
+        char c = *d;
+        *d = successor(c);
+        if c != 'z' {
+            # didn't carry, so we're done
+            return;
+        }
+        i = i - 1;
+    }
+}
+
+fn successor(char c) {
+    # If only the compiler did inlining...
+    char* d = SUCCESSORS + c - 'a';
+    return *d;
+}
+
+fn readLine() { # todo: move to `io`
+    void* b = StringBuilder__new();
+    while !iseof() {
+        char c = getchar();
+        if c == 0xa { done; }
+        if c == 0xd { done; }
+        StringBuilder_push(b, c);
+    }
+    return StringBuilder_into_chars(b);
+}
