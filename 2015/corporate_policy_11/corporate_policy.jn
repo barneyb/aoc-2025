@@ -2,7 +2,7 @@
 char* SUCCESSORS = "bcdefghjjkmmnppqrstuvwxyza"; # char[] lookup; SUCCESSORS['m' - 'a'] == 'n'
 
 pub fn main() {
-    char* pw = readLine(); # char[8]
+    char* pw = read_line(); # char[8]
     printf("Initial Password: '%s'\n", pw);
     findNext(pw);
     printf("Next Password   : '%s'\n", pw);
@@ -84,15 +84,4 @@ fn successor(char c) {
     # If only the compiler did inlining...
     char* d = SUCCESSORS + c - 'a';
     return *d;
-}
-
-fn readLine() { # todo: move to `io`
-    void* b = StringBuilder__new();
-    while !iseof() {
-        char c = getchar();
-        if c == 0xa { done; }
-        if c == 0xd { done; }
-        StringBuilder_push(b, c);
-    }
-    return StringBuilder_into_chars(b);
 }

@@ -12,14 +12,14 @@ The solvers are written in [Johann](https://barneyb.github.io/johann/), one per 
 
 Two assumptions must be met for the various `Makefile` to work correctly:
 
-1. a `JOHANN_HOME` environment variable, pointed at a working Johann [installation](https://barneyb.github.io/johann/#the-short-version), and
+1. a `JOHANN_HOME` environment variable, pointed at a current Johann [installation](https://barneyb.github.io/johann/#the-short-version), and
 1. the `advent-of-code-data` package is configured w/ your token.
 
 You can confirm you're set up correctly with these commands (your output will differ):
 
 ```
 % $JOHANN_HOME/bin/jnc -v
-jnc 0.20250622-237b2d0
+jnc 0.20251026-6626382
 
 % aocd 2015 1
 ()(()((()((((()(((((((() # and ~7,000 more...
