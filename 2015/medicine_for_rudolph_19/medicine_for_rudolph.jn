@@ -1,0 +1,138 @@
+fn strcmp(char* lhs, char* rhs);
+fn free(void* ptr);
+fn ArrayList_drop(void* self);
+
+# todo: 'struct TreeMap;' for an opaque name?
+struct TreeMap {
+    int a
+}
+struct ArrayList {
+    int a
+}
+
+pub fn main() {
+    void* replacements = TreeMap__new_owned(&strcmp, &free, &ArrayList_drop);
+    char* line;
+    while !iseof() {
+        line = read_line();
+        if strlen(line) == 0 {
+            # end of the replacements
+            free(line);
+            done;
+        }
+        char* idx = strchr(line, ' ') - line;
+        char* src = strprefix(line, idx);
+        char* tgt = strsuffix(line, idx + 4);
+        # printf("line '%s' is '%s' -> '%s'\n", line, src, tgt);
+        void* targets = TreeMap_get(replacements, src);
+        if targets != null {
+            free(src);
+        }
+        if targets == null {
+            targets = ArrayList__new_owned(4, &free);
+            TreeMap_put(replacements, src, targets);
+        }
+        ArrayList_push(targets, tgt);
+        free(line);
+    }
+    line = read_line();
+#    printf("calib mol: %s\n", line);
+    int calib = calibrate(replacements, line);
+    printf("Calibration Result: %d\n", calib);
+    free(line);
+    TreeMap_drop(replacements);
+}
+
+fn calibrate(TreeMap* replacements, char* init) {
+    TreeMap* result = TreeMap__new_owned(&strcmp, &free, null);
+    int start = 0;
+    int i = 1;
+    while true {
+        char c = init[i];
+        if c == null { done; }
+        if c > 0x60 {
+            # lowercase
+            i = i + 1;
+            again;
+        }
+        do_replacement(result, replacements, init, start, i);
+        start = i;
+        i = i + 1;
+    }
+    do_replacement(result, replacements, init, start, i);
+    int size = TreeMap_size(result);
+    TreeMap_drop(result);
+    return size;
+}
+
+fn do_replacement(TreeMap* result, TreeMap* replacements, char* init, int start, int end) {
+    char* mid = substr(init, start, end);
+#    printf("replace '%s'\n", mid);
+    ArrayList* repls = TreeMap_get(replacements, mid);
+    if repls == null {
+#        puts("  no replacements found");
+        free(mid);
+        return;
+    }
+    restitch(strprefix(init, start),
+             strsuffix(init, end),
+             result,
+             repls);
+    free(mid);
+}
+
+fn restitch(char* prefix, char* suffix, TreeMap* result, ArrayList* repls) {
+#    printf("  restitch '%s' .. '%s'\n", prefix, suffix);
+    int i = 0;
+    int l = ArrayList_size(repls);
+    while i < l {
+        void* sb = StringBuilder__new();
+        StringBuilder_push_str(sb, prefix);
+        StringBuilder_push_str(sb, ArrayList_get(repls, i));
+        StringBuilder_push_str(sb, suffix);
+        char* mol = StringBuilder_into_chars(sb);
+        i = i + 1;
+
+        if TreeMap_get(result, mol) != null {
+#            printf("Already seen '%s'\n", mol);
+            free(mol);
+            again;
+        }
+
+        # it's new!
+#        printf("A new one: '%s'\n", mol);
+        TreeMap_put(result, mol, 1);
+    }
+    free(prefix);
+    free(suffix);
+}
+
+fn strprefix(char* str, int len) { # todo: to stdlib?
+    return substr(str, 0, len);
+}
+
+fn strsuffix(char* str, int from) { # todo: to stdlib?
+    return strclone(str + from);
+}
+
+fn substr(char* str, int start, int end) { # todo: to stdlib?
+    int count = end - start;
+    char* result = malloc(count + 1);
+    memcpy(result, str + start, count);
+    result[count] = null;
+    return result;
+}
+
+fn strchr(char* str, char ch) { # todo: to stdlib
+    char* result = str;
+    while true {
+        char c = *result;
+        if c == ch {
+            return result;
+        }
+        if c == null {
+            return result;
+        }
+        result = result + 1;
+    }
+}
