@@ -2,16 +2,12 @@ fn strcmp(char* lhs, char* rhs);
 fn free(void* ptr);
 fn ArrayList_drop(void* self);
 
-# todo: 'struct TreeMap;' for an opaque name?
-struct TreeMap {
-    int a
-}
-struct ArrayList {
-    int a
-}
+struct ArrayList;
+struct TreeMap;
+struct StringBuilder;
 
 pub fn main() {
-    void* replacements = TreeMap__new_owned(&strcmp, &free, &ArrayList_drop);
+    TreeMap* replacements = TreeMap__new_owned(&strcmp, &free, &ArrayList_drop);
     char* line;
     while !iseof() {
         line = read_line();
@@ -24,15 +20,15 @@ pub fn main() {
         char* src = strprefix(line, idx);
         char* tgt = strsuffix(line, idx + 4);
         # printf("line '%s' is '%s' -> '%s'\n", line, src, tgt);
-        void* targets = TreeMap_get(replacements, src);
+        ArrayList* targets = replacements.get(src);
         if targets != null {
             free(src);
         }
         if targets == null {
             targets = ArrayList__new_owned(4, &free);
-            TreeMap_put(replacements, src, targets);
+            replacements.put(src, targets);
         }
-        ArrayList_push(targets, tgt);
+        targets.push(tgt);
         free(line);
     }
     line = read_line();
@@ -40,7 +36,7 @@ pub fn main() {
     int calib = calibrate(replacements, line);
     printf("Calibration Result: %d\n", calib);
     free(line);
-    TreeMap_drop(replacements);
+    replacements.drop();
 }
 
 fn calibrate(TreeMap* replacements, char* init) {
@@ -60,15 +56,15 @@ fn calibrate(TreeMap* replacements, char* init) {
         i = i + 1;
     }
     do_replacement(result, replacements, init, start, i);
-    int size = TreeMap_size(result);
-    TreeMap_drop(result);
+    int size = result.size();
+    result.drop();
     return size;
 }
 
 fn do_replacement(TreeMap* result, TreeMap* replacements, char* init, int start, int end) {
     char* mid = substr(init, start, end);
 #    printf("replace '%s'\n", mid);
-    ArrayList* repls = TreeMap_get(replacements, mid);
+    ArrayList* repls = replacements.get(mid);
     if repls == null {
 #        puts("  no replacements found");
         free(mid);
@@ -84,16 +80,16 @@ fn do_replacement(TreeMap* result, TreeMap* replacements, char* init, int start,
 fn restitch(char* prefix, char* suffix, TreeMap* result, ArrayList* repls) {
 #    printf("  restitch '%s' .. '%s'\n", prefix, suffix);
     int i = 0;
-    int l = ArrayList_size(repls);
+    int l = repls.size();
     while i < l {
-        void* sb = StringBuilder__new();
-        StringBuilder_push_str(sb, prefix);
-        StringBuilder_push_str(sb, ArrayList_get(repls, i));
-        StringBuilder_push_str(sb, suffix);
-        char* mol = StringBuilder_into_chars(sb);
+        StringBuilder* sb = StringBuilder__new();
+        sb.push_str(prefix);
+        sb.push_str(repls.get(i));
+        sb.push_str(suffix);
+        char* mol = sb.into_chars();
         i = i + 1;
 
-        if TreeMap_get(result, mol) != null {
+        if result.get(mol) != null {
 #            printf("Already seen '%s'\n", mol);
             free(mol);
             again;
@@ -101,38 +97,16 @@ fn restitch(char* prefix, char* suffix, TreeMap* result, ArrayList* repls) {
 
         # it's new!
 #        printf("A new one: '%s'\n", mol);
-        TreeMap_put(result, mol, 1);
+        result.put(mol, 1);
     }
     free(prefix);
     free(suffix);
 }
 
-fn strprefix(char* str, int len) { # todo: to stdlib?
+fn strprefix(char* str, int len) {
     return substr(str, 0, len);
 }
 
-fn strsuffix(char* str, int from) { # todo: to stdlib?
+fn strsuffix(char* str, int from) {
     return strclone(str + from);
-}
-
-fn substr(char* str, int start, int end) { # todo: to stdlib?
-    int count = end - start;
-    char* result = malloc(count + 1);
-    memcpy(result, str + start, count);
-    result[count] = null;
-    return result;
-}
-
-fn strchr(char* str, char ch) { # todo: to stdlib
-    char* result = str;
-    while true {
-        char c = *result;
-        if c == ch {
-            return result;
-        }
-        if c == null {
-            return result;
-        }
-        result = result + 1;
-    }
 }

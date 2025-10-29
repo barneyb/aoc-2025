@@ -27,11 +27,10 @@ fn isValidPassword(char* pw) {
 
 fn pairCount(char* pw) {
     int n = 0;
-    char prev = *pw;
+    char prev = pw[0];
     int i = 1;
     while i < 8 {
-        char* d = pw + i;
-        char c = *d;
+        char c = pw[i];
         if c == prev {
             # found a pair
             n = n + 1;
@@ -45,43 +44,33 @@ fn pairCount(char* pw) {
 
 fn hasRunOfThree(char* pw) {
     int i = 1; # start at the second char
-    char* d = pw + i;
-    char prev = *d;
+    char prev = pw[i];
     i = i + 1;
-    d = pw + i;
-    char curr = *d;
+    char curr = pw[i];
     while i < 8 {
         if curr == prev + 1 {
-            d = pw + i - 2;
-            char c = *d;
+            char c = pw[i - 2];
             if prev == c + 1 {
                 return true;
             }
         }
         prev = curr;
         i = i + 1;
-        d = pw + i;
-        curr = *d;
+        curr = pw[i];
     }
     return false;
 }
 
 fn increment(char* pw) {
+    char* succ = SUCCESSORS;
     int i = 7; # start at the end
     while i >= 0 {
-        char* d = pw + i;
-        char c = *d;
-        *d = successor(c);
+        char c = pw[i];
+        pw[i] = succ[c - 'a'];
         if c != 'z' {
             # didn't carry, so we're done
             return;
         }
         i = i - 1;
     }
-}
-
-fn successor(char c) {
-    # If only the compiler did inlining...
-    char* d = SUCCESSORS + c - 'a';
-    return *d;
 }
