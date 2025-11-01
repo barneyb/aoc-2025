@@ -55,12 +55,15 @@ mkdir -p "$DIR"
 cd "$DIR"
 
 cat << EOF > "Makefile"
-YEAR=${YEAR}
-DAY=${DAY}
-include ../../makefile.inc
+YEAR = ${YEAR}
+DAY = ${DAY}
+include ../../make_vars.inc
+OBJECTS = \
 
 all: \$(BIN)/${NAME} input.txt
 	\$(BIN)/${NAME} < input.txt
+
+include ../../makefile.inc
 EOF
 
 cat << EOF > "${NAME}.jn"
