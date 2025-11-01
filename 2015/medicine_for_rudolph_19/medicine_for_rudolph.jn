@@ -8,19 +8,34 @@ struct StringBuilder;
 
 struct Repl {
     char* src,
+    int slen,
     char* tgt,
+    int tlen,
 }
 
 fn Repl__new(char* src, char* tgt) {
     Repl* r = malloc(sizeof(Repl));
     r.src = src;
+    r.slen = strlen(src);
     r.tgt = tgt;
+    r.tlen = strlen(tgt);
     return r;
 }
 
 fn Repl_drop(Repl* self) {
     free(self.src);
     free(self.tgt);
+    free(self);
+}
+
+struct Machine {
+    ArrayList* repls,
+    int repl_count,
+    int dead_ends
+}
+
+fn Machine_drop(Machine* self) {
+    ArrayList_drop(self.repls);
     free(self);
 }
 
@@ -54,112 +69,88 @@ pub fn main() {
     line = read_line();
 #    printf("calib mol: %s\n", line);
     printf("Calibration Result: %d\n", calibrate(replacements, line));
-    printf("Fabrication Steps : %d\n", fabricate(repls, line));
+    Machine* m = Machine__new(repls);
+    printf("Fabrication Steps : %d\n", Machine_fabricate(m, line));
+    printf("  (%d dead ends)\n", m.dead_ends);
+    m.drop();
     free(line);
-    repls.drop();
     replacements.drop();
 }
 
-fn fabricate(ArrayList* repls, char* goal) {
-#    # iterating backwards fails the real input for unknown reasons?
-#    int ri = repls.size() - 1;
-#    while ri >= 0 {
-#        Repl* rep = repls.get(ri);
-#        ri = ri - 1;
-    int ri = 0;
-    while ri < repls.size() {
-        Repl* rep = repls.get(ri);
-        ri = ri + 1;
+# by length of target
+fn replcmp(Repl* a, Repl* b) {
+    return a.tlen - b.tlen;
+}
+
+fn Machine__new(ArrayList* repls) {
+    repls.sort(&replcmp);
+    Machine* m = malloc(sizeof(Machine));
+    m.repls = repls;
+    m.repl_count = repls.size();
+    m.dead_ends = 0;
+    return m;
+}
+
+fn Machine_dead_end(Machine* self) {
+    self.dead_ends = self.dead_ends + 1;
+    if self.dead_ends % 10_000 == 0 {
+        printf("%d K dead ends\n", self.dead_ends / 1000);
+    }
+}
+
+fn Machine_fabricate(Machine* self, char* goal) {
+    # iterate backwards to shorten as quickly as possible
+    int ri = self.repl_count - 1;
+    while ri >= 0 {
+        Repl* rep = ArrayList_get(self.repls, ri);
+        ri = ri - 1;
 
         if strstr(goal, rep.tgt) == null { again; }
 
-#        printf("for %s => %s\n", rep.src, rep.tgt);
-        ArrayList* parts = strsplitafter(goal, rep.tgt);
-        char* s;
-#        s = parts.to_string(null);
-#        printf("  split '%s'\n    after '%s':\n    %s\n", goal, rep.tgt, s);
-#        free(s);
-        int pi = parts.size() - 2; # last split doesn't have tgt
-        while pi >= 0 {
-            s = parts.get(pi);
-            char* work = strclone(s);
-#            printf("    from '%s' (at %d )", work, strlen(work) - strlen(rep.tgt));
-            memcpy(work + strlen(work) - strlen(rep.tgt), rep.src, strlen(rep.src) + 1);
-#            printf(" to '%s'\n", work);
-            parts.set(pi, work);
-            work = strjoin(parts, "");
-#            printf("    now '%s'\n", work);
-            if strcmp(work, "e") == 0 {
-                return 1;
-            }
-            return 1 + fabricate(repls, work);
-
-            free(parts.set(pi, s));
-            pi = pi - 1;
+        int result = self.split_and_replace(goal, rep);
+        if result > 0 {
+            return result;
         }
-        parts.drop();
     }
-    printf("Dead end: '%s'\n", goal);
+    self.dead_end();
     return 0;
 }
 
-#    printf("goal: '%s'\n", goal);
-#    printf("split H: %s\n", ArrayList_to_string(strsplit(goal, "H"), null));
-#    printf("split O: %s\n", ArrayList_to_string(strsplit(goal, "O"), null));
-#    printf("split OH: %s\n", ArrayList_to_string(strsplit(goal, "OH"), null));
-#    printf("split HO: %s\n", ArrayList_to_string(strsplit(goal, "HO"), null));
-#    printf("split -: %s\n", ArrayList_to_string(strsplit(goal, "-"), null));
-
-fn ArrayList_to_string(ArrayList* self, void* el_to_string) { # todo: jstdlib?
-    int l = self.size();
-    if l == 0 {
-        return strclone("[]");
+fn wipe(char* str, int len) {
+    while len > 0 {
+        len = len - 1;
+        str[len] = '.';
     }
-    StringBuilder* sb = StringBuilder__new(l);
-    sb.push('[');
-    int i = 0;
-    while i < l {
-        if i > 0 {
-            sb.push(',');
-        }
-        void* el = self.get(i);
-        if el_to_string != null {
-            el = el_to_string(el, null);
-        }
-        sb.push_str(el);
-        if el_to_string != null {
-            free(el);
-        }
-        i = i + 1;
-    }
-    sb.push(']');
-    return sb.into_chars();
 }
 
-fn strjoin(ArrayList* parts, char* delim) {
-    int l = parts.size();
-    if l == 0 { return ""; }
-    StringBuilder* sb = StringBuilder__new(l);
-    sb.push_str(parts.get(0));
-    int i = 1;
-    while i < l {
-        sb.push_str(delim);
-        sb.push_str(parts.get(i));
-        i = i + 1;
-    }
-    return sb.into_chars();
-}
+fn Machine_split_and_replace(Machine* self, char* goal, Repl* rep) {
+    ArrayList* parts = strsplitafter(goal, rep.tgt);
+    char* s;
+    int pi = parts.size() - 2; # last split doesn't have tgt
+    while pi >= 0 {
+        s = parts.get(pi);
+        char* work = strclone(s);
+        memcpy(work + strlen(work) - strlen(rep.tgt), rep.src, rep.slen + 1);
+        parts.set(pi, work);
+        work = strjoin(parts, "");
+        free(parts.set(pi, s)); # frees the 'scratch' work
 
-# todo: auto-drop, instead of returning old? Hmm.
-fn ArrayList_set(ArrayList* self, int i, void el) { # todo: jstdlib
-    if i < 0 { panic(-i, "Index out of bounds\n", 20); }
-    if i >= self.size() { panic(i, "Index out of bounds\n", 20); }
-    self = self + 0x10; # todo: struct!
-    void* arr = *self;
-    arr = arr + i * 0x8;
-    void old = *arr;
-    *arr = el;
-    return old;
+        if strcmp(work, "e") == 0 {
+            free(work);
+            parts.drop();
+            return 1;
+        }
+        int result = self.fabricate(work);
+        free(work);
+        if result > 0 {
+            parts.drop();
+            return 1 + result;
+        }
+
+        pi = pi - 1;
+    }
+    parts.drop();
+    return -1;
 }
 
 fn calibrate(TreeMap* replacements, char* init) {
@@ -232,74 +223,4 @@ fn strprefix(char* str, int len) {
 
 fn strsuffix(char* str, int from) {
     return strclone(str + from);
-}
-
-# I return an `ArrayList` containing substrings of `str`, delimited by `delim`.
-# If `delim` is the empty string, panic.
-fn strsplit(char* str, char* delim) { # todo: to jstdlib
-    int len = strlen(delim);
-    if len == 0 { panic(4, "empty delim to strsplit", 23); }
-    ArrayList* parts = ArrayList__new_owned(10, &free);
-    char* ptr = strstr(str, delim);
-    while ptr != null {
-        parts.push(substr(str, 0, ptr - str));
-        str = ptr + len;
-        ptr = strstr(str, delim);
-    }
-    parts.push(substr(str, 0, strlen(str)));
-    return parts;
-}
-
-# I return an `ArrayList` containing substrings of `str`, delimited by `delim`.
-# If `delim` is the empty string, panic.
-fn strsplitafter(char* str, char* delim) { # todo: to jstdlib
-    int len = strlen(delim);
-    if len == 0 { panic(4, "empty delim to strsplit", 23); }
-    ArrayList* parts = ArrayList__new_owned(10, &free);
-    char* ptr = strstr(str, delim);
-    while ptr != null {
-        parts.push(substr(str, 0, ptr - str + len));
-        str = ptr + len;
-        ptr = strstr(str, delim);
-    }
-    parts.push(substr(str, 0, strlen(str)));
-    return parts;
-}
-
-# I return a pointer to the first instance of `substr` within `str`, or null if
-# there are no instances. If `substr` is the empty string, `str` is returned.
-fn strstr(char* str, char* substr) { # todo: to jstdlib
-    # if substr is empty, it matches the start of str
-    char first_char = *substr;
-    if first_char == null { return str; }
-
-    # otherwise, search
-    char curr = *str;
-    while curr != null {
-        if curr == first_char {
-            # the first chars matched, check the rest
-            char* lhs = str;
-            char* rhs = substr;
-            char l = *lhs;
-            char r = *rhs;
-            while true {
-                if r == null {
-                    # found it!
-                    return str;
-                }
-                if l != r {
-                    done;
-                }
-                lhs = lhs + 1;
-                rhs = rhs + 1;
-                l = *lhs;
-                r = *rhs;
-            }
-        }
-        str = str + 1;
-        curr = *str;
-    }
-
-    # didn't find it
-    return null;
 }

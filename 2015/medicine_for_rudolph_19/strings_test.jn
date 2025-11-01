@@ -1,0 +1,27 @@
+struct ArrayList;
+
+pub fn main() {
+    test_split();
+}
+
+fn test_split() {
+    char* goal = "abHOHOcdOH";
+    printf("goal: '%s'\n", goal);
+    test_one_split(goal, "H");
+    test_one_split(goal, "O");
+    test_one_split(goal, "OH");
+    test_one_split(goal, "HO");
+    test_one_split(goal, "-");
+}
+
+fn test_one_split(char* goal, char* sep) {
+    ArrayList* split = strsplit(goal, sep);
+    ArrayList* after = strsplitafter(goal, sep);
+    char* ss = split.to_string(null);
+    split.drop();
+    char* as = after.to_string(null);
+    after.drop();
+    printf("split '%s': %s %s\n", sep, ss, as);
+    free(ss);
+    free(as);
+}
