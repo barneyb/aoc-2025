@@ -1,4 +1,6 @@
+YEAR=2015
+DAY=11
 include ../../makefile.inc
 
-all: $(BIN)/corporate_policy
-	aocd 2015 11 | $(BIN)/corporate_policy
+all: $(BIN)/corporate_policy input.txt
+	$(BIN)/corporate_policy < input.txt

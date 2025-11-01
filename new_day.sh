@@ -55,10 +55,12 @@ mkdir -p "$DIR"
 cd "$DIR"
 
 cat << EOF > "Makefile"
+YEAR=${YEAR}
+DAY=${DAY}
 include ../../makefile.inc
 
-all: \$(BIN)/${NAME}
-	aocd ${YEAR} ${DAY} | \$(BIN)/${NAME}
+all: \$(BIN)/${NAME} input.txt
+	\$(BIN)/${NAME} < input.txt
 EOF
 
 cat << EOF > "${NAME}.jn"

@@ -8,6 +8,9 @@ JSTDLIB = $(JOHANN_HOME)/lib/jstdlib.o
 # blindly assume that whatever includes this defines 'all' as its entrypoint
 __default__: all
 
+input.txt:
+	aocd $(YEAR) $(DAY) > /tmp/input.txt && mv /tmp/input.txt input.txt
+
 $(BIN)/%: $(LIB)/%.o $(JSTDLIB)
 	@mkdir -p $(BIN)
 	gcc $^ -o $@
