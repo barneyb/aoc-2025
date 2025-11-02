@@ -1,8 +1,6 @@
 YEAR=2015
 DAY=19
 include ../../make_vars.inc
-OBJECTS = \
-	$(LIB)/arrays.o \
 
 all: $(BIN)/medicine_for_rudolph input.txt
 	$(BIN)/medicine_for_rudolph < input.txt
