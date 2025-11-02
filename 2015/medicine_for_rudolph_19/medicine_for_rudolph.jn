@@ -124,7 +124,7 @@ fn wipe(char* str, int len) {
 }
 
 fn Machine_split_and_replace(Machine* self, char* goal, Repl* rep) {
-    ArrayList* parts = strsplitafter(goal, rep.tgt);
+    ArrayList* parts = strsplit_after(goal, rep.tgt);
     char* s;
     int pi = parts.size() - 2; # last split doesn't have tgt
     while pi >= 0 {
