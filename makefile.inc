@@ -1,14 +1,15 @@
-TGT = target
-BIN = $(TGT)/bin
-LIB = $(TGT)/lib
-OUT = $(TGT)/out
-JNC = $(JOHANN_HOME)/bin/jnc
-JSTDLIB = $(JOHANN_HOME)/lib/jstdlib.o
+include ../../make_vars.inc
 
 # blindly assume that whatever includes this defines 'all' as its entrypoint
 __default__: all
 
-$(BIN)/%: $(LIB)/%.o $(JSTDLIB)
+input.txt:
+	aocd $(YEAR) $(DAY) > /tmp/input.txt && mv /tmp/input.txt input.txt
+
+clean:
+	rm -rf $(TGT) input.txt
+
+$(BIN)/%: $(LIB)/%.o $(JSTDLIB) $(OBJECTS)
 	@mkdir -p $(BIN)
 	gcc $^ -o $@
 
@@ -20,8 +21,8 @@ $(OUT)/%.s: %.jn $(JNC)
 	@mkdir -p $(OUT)
 	$(JNC) < $< > $@
 
-clean:
-	rm -rf $(TGT)
+%: $(BIN)/%
+	$(BIN)/$@
 
 # don't delete intermediate files created by pattern rules
 .SECONDARY:

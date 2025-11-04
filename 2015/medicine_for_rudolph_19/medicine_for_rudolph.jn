@@ -1,13 +1,48 @@
-fn strcmp(char* lhs, char* rhs);
-fn free(void* ptr);
-fn ArrayList_drop(void* self);
+fn strcmp(char*, char*);
+fn strhash(char*);
+fn free(void*);
+fn ArrayList_drop(void*);
 
 struct ArrayList;
-struct TreeMap;
+struct HashMap;
 struct StringBuilder;
 
+struct Repl {
+    char* src,
+    int slen,
+    char* tgt,
+    int tlen,
+}
+
+fn Repl__new(char* src, char* tgt) {
+    Repl* r = malloc(sizeof(Repl));
+    r.src = src;
+    r.slen = strlen(src);
+    r.tgt = tgt;
+    r.tlen = strlen(tgt);
+    return r;
+}
+
+fn Repl_drop(Repl* self) {
+    free(self.src);
+    free(self.tgt);
+    free(self);
+}
+
+struct Machine {
+    ArrayList* repls,
+    int repl_count,
+    int dead_ends
+}
+
+fn Machine_drop(Machine* self) {
+    ArrayList_drop(self.repls);
+    free(self);
+}
+
 pub fn main() {
-    TreeMap* replacements = TreeMap__new_owned(&strcmp, &free, &ArrayList_drop);
+    HashMap* replacements = HashMap__new_owned(&strhash, &strcmp, &free, &ArrayList_drop);
+    ArrayList* repls = ArrayList__new_owned(10, &Repl_drop);
     char* line;
     while !iseof() {
         line = read_line();
@@ -19,6 +54,7 @@ pub fn main() {
         char* idx = strchr(line, ' ') - line;
         char* src = strprefix(line, idx);
         char* tgt = strsuffix(line, idx + 4);
+        repls.push(Repl__new(strclone(src), strclone(tgt)));
         # printf("line '%s' is '%s' -> '%s'\n", line, src, tgt);
         ArrayList* targets = replacements.get(src);
         if targets != null {
@@ -33,14 +69,93 @@ pub fn main() {
     }
     line = read_line();
 #    printf("calib mol: %s\n", line);
-    int calib = calibrate(replacements, line);
-    printf("Calibration Result: %d\n", calib);
+    printf("Calibration Result: %d\n", calibrate(replacements, line));
+    Machine* m = Machine__new(repls);
+    printf("Fabrication Steps : %d\n", Machine_fabricate(m, line));
+    printf("  (%d dead ends)\n", m.dead_ends);
+    m.drop();
     free(line);
     replacements.drop();
 }
 
-fn calibrate(TreeMap* replacements, char* init) {
-    TreeMap* result = TreeMap__new_owned(&strcmp, &free, null);
+# by length of target
+fn replcmp(Repl* a, Repl* b) {
+    return a.tlen - b.tlen;
+}
+
+fn Machine__new(ArrayList* repls) {
+    repls.sort(&replcmp);
+    Machine* m = malloc(sizeof(Machine));
+    m.repls = repls;
+    m.repl_count = repls.size();
+    m.dead_ends = 0;
+    return m;
+}
+
+fn Machine_dead_end(Machine* self) {
+    self.dead_ends = self.dead_ends + 1;
+    if self.dead_ends % 10_000 == 0 {
+        printf("%d K dead ends\n", self.dead_ends / 1000);
+    }
+}
+
+fn Machine_fabricate(Machine* self, char* goal) {
+    # iterate backwards to shorten as quickly as possible
+    int ri = self.repl_count - 1;
+    while ri >= 0 {
+        Repl* rep = ArrayList_get(self.repls, ri);
+        ri = ri - 1;
+
+        if strstr(goal, rep.tgt) == null { again; }
+
+        int result = self.split_and_replace(goal, rep);
+        if result > 0 {
+            return result;
+        }
+    }
+    self.dead_end();
+    return 0;
+}
+
+fn wipe(char* str, int len) {
+    while len > 0 {
+        len = len - 1;
+        str[len] = '.';
+    }
+}
+
+fn Machine_split_and_replace(Machine* self, char* goal, Repl* rep) {
+    ArrayList* parts = strsplit_after(goal, rep.tgt);
+    char* s;
+    int pi = parts.size() - 2; # last split doesn't have tgt
+    while pi >= 0 {
+        s = parts.get(pi);
+        char* work = strclone(s);
+        memcpy(work + strlen(work) - strlen(rep.tgt), rep.src, rep.slen + 1);
+        parts.set(pi, work);
+        work = strjoin(parts, "");
+        free(parts.set(pi, s)); # frees the 'scratch' work
+
+        if strcmp(work, "e") == 0 {
+            free(work);
+            parts.drop();
+            return 1;
+        }
+        int result = self.fabricate(work);
+        free(work);
+        if result > 0 {
+            parts.drop();
+            return 1 + result;
+        }
+
+        pi = pi - 1;
+    }
+    parts.drop();
+    return -1;
+}
+
+fn calibrate(HashMap* replacements, char* init) {
+    HashMap* result = HashMap__new_owned(&strhash, &strcmp, &free, null);
     int start = 0;
     int i = 1;
     while true {
@@ -61,7 +176,7 @@ fn calibrate(TreeMap* replacements, char* init) {
     return size;
 }
 
-fn do_replacement(TreeMap* result, TreeMap* replacements, char* init, int start, int end) {
+fn do_replacement(HashMap* result, HashMap* replacements, char* init, int start, int end) {
     char* mid = substr(init, start, end);
 #    printf("replace '%s'\n", mid);
     ArrayList* repls = replacements.get(mid);
@@ -77,7 +192,7 @@ fn do_replacement(TreeMap* result, TreeMap* replacements, char* init, int start,
     free(mid);
 }
 
-fn restitch(char* prefix, char* suffix, TreeMap* result, ArrayList* repls) {
+fn restitch(char* prefix, char* suffix, HashMap* result, ArrayList* repls) {
 #    printf("  restitch '%s' .. '%s'\n", prefix, suffix);
     int i = 0;
     int l = repls.size();
