@@ -1,9 +1,10 @@
-fn strcmp(char* lhs, char* rhs);
-fn free(void* ptr);
-fn ArrayList_drop(void* self);
+fn strcmp(char*, char*);
+fn strhash(char*);
+fn free(void*);
+fn ArrayList_drop(void*);
 
 struct ArrayList;
-struct TreeMap;
+struct HashMap;
 struct StringBuilder;
 
 struct Repl {
@@ -40,7 +41,7 @@ fn Machine_drop(Machine* self) {
 }
 
 pub fn main() {
-    TreeMap* replacements = TreeMap__new_owned(&strcmp, &free, &ArrayList_drop);
+    HashMap* replacements = HashMap__new_owned(&strhash, &strcmp, &free, &ArrayList_drop);
     ArrayList* repls = ArrayList__new_owned(10, &Repl_drop);
     char* line;
     while !iseof() {
@@ -153,8 +154,8 @@ fn Machine_split_and_replace(Machine* self, char* goal, Repl* rep) {
     return -1;
 }
 
-fn calibrate(TreeMap* replacements, char* init) {
-    TreeMap* result = TreeMap__new_owned(&strcmp, &free, null);
+fn calibrate(HashMap* replacements, char* init) {
+    HashMap* result = HashMap__new_owned(&strhash, &strcmp, &free, null);
     int start = 0;
     int i = 1;
     while true {
@@ -175,7 +176,7 @@ fn calibrate(TreeMap* replacements, char* init) {
     return size;
 }
 
-fn do_replacement(TreeMap* result, TreeMap* replacements, char* init, int start, int end) {
+fn do_replacement(HashMap* result, HashMap* replacements, char* init, int start, int end) {
     char* mid = substr(init, start, end);
 #    printf("replace '%s'\n", mid);
     ArrayList* repls = replacements.get(mid);
@@ -191,7 +192,7 @@ fn do_replacement(TreeMap* result, TreeMap* replacements, char* init, int start,
     free(mid);
 }
 
-fn restitch(char* prefix, char* suffix, TreeMap* result, ArrayList* repls) {
+fn restitch(char* prefix, char* suffix, HashMap* result, ArrayList* repls) {
 #    printf("  restitch '%s' .. '%s'\n", prefix, suffix);
     int i = 0;
     int l = repls.size();
