@@ -11,7 +11,11 @@ if [ -z "$DAY" ]; then
     exit 1
 fi
 if [ -z "$YEAR" ]; then
-    YEAR=2025
+    YEAR=`date +%Y`
+    MONTH=`date +%m`
+    if (( MONTH < 12 )); then
+        YEAR=$((YEAR - 1))
+    fi
 fi
 
 if (( $YEAR < $DAY )); then
