@@ -37,6 +37,11 @@ else
     fi
 fi
 
+if ! git diff --quiet; then
+    echo "Working copy is dirty. Refusing to proceed."
+    exit 1
+fi
+
 NAME="$(cat << EOF | python - "$YEAR" "$DAY"
 import re
 import sys
@@ -55,6 +60,12 @@ DIR="${YEAR}/${NAME}_${DAY}"
 echo
 echo "Creating '${NAME}.jn' in '$DIR'"
 echo
+BNAME=`echo $NAME | sed -e 's/_/-/g'`
+I=`git branch --list "$BNAME*" | wc -l`
+if (( I > 0 )); then
+    BNAME="$BNAME-$((I + 1))"
+fi
+git checkout -b $BNAME master
 mkdir -p "$DIR"
 cd "$DIR"
 
@@ -62,7 +73,7 @@ cat << EOF > "Makefile"
 YEAR = ${YEAR}
 DAY = ${DAY}
 include ../../make_vars.inc
-OBJECTS = \
+OBJECTS = \\
 
 all: \$(BIN)/${NAME} input.txt
 	\$(BIN)/${NAME} < input.txt
