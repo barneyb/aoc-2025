@@ -1,8 +1,4 @@
-struct StringBuilder {
-    int capacity,
-    int size,
-    char** buf,
-}
+struct StringBuilder;
 
 pub fn main(int argc, char** argv) {
     int disk_size = 1;
@@ -56,18 +52,4 @@ pub fn main(int argc, char** argv) {
     }
     printf("  checksum: '%s'\n", data);
     free(data);
-}
-
-
-fn atoi(char* str) { # todo: jstdlib
-    int i = 0;
-    while *str != null {
-        i = i * 10 + (*str - '0');
-        str = str + 1;
-    }
-    return i;
-}
-
-fn StringBuilder_length(StringBuilder* self) { # todo: jstdlib
-    return self.size;
 }
