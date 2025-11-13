@@ -12,7 +12,7 @@ The solvers are written in [Johann](https://barneyb.github.io/johann/), one per 
 
 Two assumptions must be met for the various `Makefile` to work correctly:
 
-1. a `JOHANN_HOME` environment variable, pointed at a current Johann [installation](https://barneyb.github.io/johann/#the-short-version), and
+1. a `JOHANN_HOME` environment variable, pointed at a current Johann [installation w/ source](https://barneyb.github.io/johann/#the-short-version), and
 1. the `advent-of-code-data` package is configured w/ your token.
 
 You can confirm you're set up correctly with these commands (your output will differ):
@@ -33,7 +33,8 @@ With that squared away, solve [Not Quite Lisp](https://adventofcode.com/2015/day
 ~/projects/johann/bin/jnc < not_quite_lisp.jn > target/out/not_quite_lisp.s
 gcc -c target/out/not_quite_lisp.s -o target/lib/not_quite_lisp.o
 gcc target/lib/not_quite_lisp.o /Users/barneyb/projects/johann/lib/jstdlib.o -o target/bin/not_quite_lisp
-aocd 2015 1 | target/bin/not_quite_lisp
-Final floor: 321
+aocd 2015 1 > input.txt
+target/bin/not_quite_lisp < input.txt
+Final floor  : 321
 First descent: 1234
 ```

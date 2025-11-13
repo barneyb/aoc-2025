@@ -1,0 +1,113 @@
+pub fn main() {
+    int** ings = malloc(sizeof(int*) * 4);
+    int ing_count = 0;
+    while !iseof() {
+        ings[ing_count] = parse(read_line());
+        ing_count = ing_count + 1;
+    }
+    if ing_count != 4 {
+        eprintf("Exactly four ingredients are required");
+        exit(4);
+    }
+
+    printf("Best Score: %d", find_best(ings));
+
+    int i = 0;
+    while i < ing_count {
+        free(ings[i]);
+        i = i + 1;
+    }
+    free(ings);
+}
+
+fn find_best(int** ings) {
+    int best = -1;
+    int a = 1;
+    while a < 100 {
+        int b = 1;
+        while b < 100 {
+            int c = 1;
+            while c < 100 {
+                int d = 100 - a - b - c;
+                if d < 1 { done; }
+                int** cookie = scalar_mul(ings[0], a);
+                vector_add(cookie, scalar_mul(ings[1], b));
+                vector_add(cookie, scalar_mul(ings[2], c));
+                vector_add(cookie, scalar_mul(ings[3], d));
+                int s = score(cookie);
+                free(cookie);
+                if s > best {
+                    best = s;
+                }
+                c = c + 1;
+            }
+            b = b + 1;
+        }
+        a = a + 1;
+    }
+    return best;
+}
+
+fn vector_add(int* u, int* v) {
+    int i = 0;
+    while i < 5 {
+        u[i] = u[i] + v[i];
+        i = i + 1;
+    }
+    free(v);
+}
+
+fn scalar_mul(int* vec, int factor) {
+    int* r = malloc(sizeof(int) * 5);
+    int i = 0;
+    while i < 5 {
+        r[i] = vec[i] * factor;
+        i = i + 1;
+    }
+    return r;
+}
+
+fn score(int* c) {
+    return imax(0, c[0]) * imax(0, c[1]) * imax(0, c[2]) * imax(0, c[3]);
+}
+
+# Butterscotch: capacity -1, durability -2, flavor 6, texture 3, calories 8
+fn parse(char* line) {
+    int* ing = malloc(sizeof(int) * 5);
+    char* s = line;
+    while *s != ':' {
+        s = s + 1;
+    }
+    ing[0] = next_attr_value(&s);
+    ing[1] = next_attr_value(&s);
+    ing[2] = next_attr_value(&s);
+    ing[3] = next_attr_value(&s);
+    ing[4] = next_attr_value(&s);
+    free(line);
+    return ing;
+}
+
+fn next_attr_value(char** str_ptr) {
+    char* s = *str_ptr;
+    StringBuilder * sb = StringBuilder__new(20);
+    # move ahead into the attr name
+    s = s + 3;
+    # skip over the rest of the name
+    while *s != ' ' {
+        s = s + 1;
+    }
+    # skip the space
+    s = s + 1;
+    # read the numeric part
+    char c = *s;
+    while c != ',' {
+        if c == null { done; }
+        sb.push(c);
+        s = s + 1;
+        c = *s;
+    }
+    # update the pointer
+    *str_ptr = s;
+    # convert to int
+    return sb.into_int();
+}

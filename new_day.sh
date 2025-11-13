@@ -73,10 +73,11 @@ cat << EOF > "Makefile"
 YEAR = ${YEAR}
 DAY = ${DAY}
 include ../../make_vars.inc
+ = \$(BIN)/${NAME}
 OBJECTS = \\
 
-all: \$(BIN)/${NAME} input.txt
-	\$(BIN)/${NAME} < input.txt
+all: \$(PROG) input.txt
+	\$(PROG) < input.txt
 
 include ../../makefile.inc
 EOF
