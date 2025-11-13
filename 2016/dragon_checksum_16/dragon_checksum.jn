@@ -1,0 +1,55 @@
+struct StringBuilder;
+
+pub fn main(int argc, char** argv) {
+    int disk_size = 1;
+    int init;
+    if argc > 1 { disk_size = atoi(argv[1]); }
+    if argc > 2 { init = argv[2]; }
+    if argc <= 2 { init = read_line(); }
+    printf("For input '%s', fill %d-byte disk\n", init, disk_size);
+    char* data = strclone(init);
+    if argc <= 2 { free(init); }
+    int len = strlen(data);
+    StringBuilder* sb;
+    int i;
+    while len < disk_size {
+        sb = StringBuilder__new(disk_size + 2);
+        sb.push_str(data);
+        sb.push('0');
+        i = len - 1;
+        while i >= 0 {
+            if data[i] == '0' {
+                sb.push('1');
+                i = i - 1;
+                again;
+            }
+            sb.push('0');
+            i = i - 1;
+        }
+        free(data);
+        len = sb.length();
+        data = sb.into_chars();
+    }
+#    printf("  data: '%s'\n", data);
+    data[disk_size] = null;
+    len = strlen(data);
+    while true {
+        sb = StringBuilder__new(len / 2 + 1);
+        i = 0;
+        while i < len {
+            if data[i] == data[i + 1] {
+                sb.push('1');
+                i = i + 2;
+                again;
+            }
+            sb.push('0');
+            i = i + 2;
+        }
+        free(data);
+        len = sb.length();
+        data = sb.into_chars();
+        if len % 2 == 1 { done; }
+    }
+    printf("  checksum: '%s'\n", data);
+    free(data);
+}
