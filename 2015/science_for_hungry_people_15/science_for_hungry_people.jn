@@ -1,3 +1,8 @@
+struct Bests {
+    int overall,
+    int cal_500,
+}
+
 pub fn main() {
     int** ings = malloc(sizeof(int*) * 4);
     int ing_count = 0;
@@ -10,8 +15,10 @@ pub fn main() {
         exit(4);
     }
 
-    printf("Best Score            : %d\n", find_best(ings));
-    printf("Best 500 Calorie Score: %d\n", find_best_500(ings));
+    Bests* bests = find_bests(ings);
+    printf("Best Score            : %d\n", bests.overall);
+    printf("Best 500 Calorie Score: %d\n", bests.cal_500);
+    free(bests);
 
     int i = 0;
     while i < ing_count {
@@ -21,8 +28,10 @@ pub fn main() {
     free(ings);
 }
 
-fn find_best(int** ings) {
-    int best = -1;
+fn find_bests(int** ings) {
+    Bests* bests = malloc(sizeof(Bests));
+    bests.overall = 0;
+    bests.cal_500 = 0;
     int a = 1;
     while a < 100 {
         int b = 1;
@@ -36,9 +45,14 @@ fn find_best(int** ings) {
                 vector_add(cookie, scalar_mul(ings[2], c));
                 vector_add(cookie, scalar_mul(ings[3], d));
                 int s = score(cookie);
+                if cookie[4] == 500 {
+                    if s > bests.cal_500 {
+                        bests.cal_500 = s;
+                    }
+                }
                 free(cookie);
-                if s > best {
-                    best = s;
+                if s > bests.overall {
+                    bests.overall = s;
                 }
                 c = c + 1;
             }
@@ -46,40 +60,7 @@ fn find_best(int** ings) {
         }
         a = a + 1;
     }
-    return best;
-}
-
-fn find_best_500(int** ings) {
-    int best = -1;
-    int a = 1;
-    while a < 100 {
-        int b = 1;
-        while b < 100 {
-            int c = 1;
-            while c < 100 {
-                int d = 100 - a - b - c;
-                if d < 1 { done; }
-                int** cookie = scalar_mul(ings[0], a);
-                vector_add(cookie, scalar_mul(ings[1], b));
-                vector_add(cookie, scalar_mul(ings[2], c));
-                vector_add(cookie, scalar_mul(ings[3], d));
-                if cookie[4] != 500 {
-                    free(cookie);
-                    c = c + 1;
-                    again;
-                }
-                int s = score(cookie);
-                free(cookie);
-                if s > best {
-                    best = s;
-                }
-                c = c + 1;
-            }
-            b = b + 1;
-        }
-        a = a + 1;
-    }
-    return best;
+    return bests;
 }
 
 fn vector_add(int* u, int* v) {
