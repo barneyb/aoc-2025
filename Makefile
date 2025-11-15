@@ -6,6 +6,9 @@ all: ./*
 	@for dir in $$(find . -name Makefile -mindepth 2); do \
     	echo ; \
     	echo $$(dirname "$$dir") ; \
-    	$(MAKE) -C $$(dirname "$$dir") clean all ; \
+    	pushd $$(dirname "$$dir") > /dev/null ; \
+    	$(MAKE) clean all ; \
+    	time $(MAKE) ; \
+    	popd > /dev/null ; \
     	echo ; \
 	done
