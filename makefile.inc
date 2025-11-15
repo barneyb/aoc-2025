@@ -21,6 +21,12 @@ $(OUT)/%.s: %.jn $(JNC)
 	@mkdir -p $(OUT)
 	$(JNC) < $< > $@
 
+$(OUT)/%.jnh: %.jn $(JNC)
+	${HEADPILE}
+
+$(OUT)/%.jstd.jnh: $(JSTDLIB_SRC)/%.jn $(JNC)
+	${HEADPILE}
+
 %: $(BIN)/%
 	$(BIN)/$@
 
