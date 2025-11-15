@@ -5,11 +5,6 @@ set -e
 DAY="$1"
 YEAR="$2"
 
-if ! git diff --quiet; then
-    echo "Working copy is dirty. Refusing to proceed."
-    exit 1
-fi
-
 if [ -z "$DAY" ]; then
     echo "Day missing."
     echo "Usage: $0 day [year]"
@@ -40,6 +35,10 @@ else
         echo "There's no day $DAY in $YEAR?!"
         exit 2
     fi
+fi
+
+if ! git diff --quiet; then
+    git commit -am "WIP: auto-commit before starting $YEAR/$DAY"
 fi
 
 git checkout master
@@ -76,12 +75,19 @@ cd "$DIR"
 cat << EOF > "Makefile"
 YEAR = ${YEAR}
 DAY = ${DAY}
+NAME = ${NAME}
 include ../../make_vars.inc
-PROG = \$(BIN)/${NAME}
+PROG = \$(BIN)/\$(NAME)
 OBJECTS = \\
 
 all: \$(PROG) input.txt
 	\$(PROG) < input.txt
+
+\$(OUT)/${NAME}.s: \\
+		\$(OUT)/allocator.jstd.jnh \\
+		\$(OUT)/io.jstd.jnh \\
+		${NAME}.jn
+	\${CATPILE}
 
 include ../../makefile.inc
 EOF
