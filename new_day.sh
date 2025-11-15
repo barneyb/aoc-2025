@@ -5,6 +5,11 @@ set -e
 DAY="$1"
 YEAR="$2"
 
+if ! git diff --quiet; then
+    echo "Working copy is dirty. Refusing to proceed."
+    exit 1
+fi
+
 if [ -z "$DAY" ]; then
     echo "Day missing."
     echo "Usage: $0 day [year]"
@@ -37,10 +42,8 @@ else
     fi
 fi
 
-if ! git diff --quiet; then
-    echo "Working copy is dirty. Refusing to proceed."
-    exit 1
-fi
+git checkout master
+./run_all.sh
 
 NAME="$(cat << EOF | python - "$YEAR" "$DAY"
 import re
@@ -54,7 +57,8 @@ name = f"{name}"
 name = re.sub(r'[^a-z0-9]+', '_', name)
 
 print(name)
-EOF)"
+EOF
+)"
 
 DIR="${YEAR}/${NAME}_${DAY}"
 echo
@@ -96,3 +100,4 @@ EOF
 
 make
 git add .
+idea "${NAME}.jn"
