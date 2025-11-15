@@ -32,7 +32,7 @@ With that squared away, solve [Not Quite Lisp](https://adventofcode.com/2015/day
 % make
 ~/projects/johann/bin/jnc < not_quite_lisp.jn > target/out/not_quite_lisp.s
 gcc -c target/out/not_quite_lisp.s -o target/lib/not_quite_lisp.o
-gcc target/lib/not_quite_lisp.o /Users/barneyb/projects/johann/lib/jstdlib.o -o target/bin/not_quite_lisp
+gcc target/lib/not_quite_lisp.o ~/projects/johann/lib/jstdlib.o -o target/bin/not_quite_lisp
 aocd 2015 1 > input.txt
 target/bin/not_quite_lisp < input.txt
 Final floor  : 321
