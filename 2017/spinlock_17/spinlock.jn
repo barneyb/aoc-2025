@@ -1,0 +1,45 @@
+struct Node {
+    int value,
+    Node* next,
+}
+
+pub fn main() {
+    # process input
+    char* line = read_line();
+    int steps = atoi(line);
+    free(line);
+
+    # initial state
+    Node* zero = malloc(sizeof(Node));
+    zero.value = 0;
+    zero.next = zero;
+
+    # execute
+    Node* curr = zero;
+    int itr = 0;
+    while itr < 2017 {
+        itr = itr + 1;
+        int s = 0;
+        while s < steps {
+            curr = curr.next;
+            s = s + 1;
+        }
+        Node* self = malloc(sizeof(Node));
+        self.value = itr;
+        self.next = curr.next;
+        curr.next = self;
+        curr = self;
+    }
+
+    curr = curr.next;
+    printf("After %d is: %d\n", itr, curr.value);
+
+    # clean up
+    Node* to_free = zero.next;
+    zero.next = null;
+    while to_free != null {
+        Node* next = to_free.next;
+        free(to_free);
+        to_free = next;
+    }
+}
