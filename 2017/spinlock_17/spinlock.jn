@@ -1,14 +1,22 @@
-struct Node {
-    int value,
-    Node* next,
-}
-
 pub fn main() {
     # process input
     char* line = read_line();
     int steps = atoi(line);
     free(line);
 
+    printf("After 2017 comes             : %d\n", part_one(2017, steps));
+#    printf("Zero's follower after 9 is   : %d\n", part_two(9, steps));
+#    printf("Zero's follower after 2017 is: %d\n", part_two(2017, steps));
+    printf("Zero's follower after 50M is : %d\n", part_two(50_000_000, steps));
+    # brute forcing part two takes ~90 seconds
+}
+
+struct Node {
+    int value,
+    Node* next,
+}
+
+fn part_one(int iterations, int steps) {
     # initial state
     Node* zero = malloc(sizeof(Node));
     zero.value = 0;
@@ -17,7 +25,7 @@ pub fn main() {
     # execute
     Node* curr = zero;
     int itr = 0;
-    while itr < 2017 {
+    while itr < iterations {
         itr = itr + 1;
         int s = 0;
         while s < steps {
@@ -31,8 +39,9 @@ pub fn main() {
         curr = self;
     }
 
+    # the one AFTER the iterations are spent
     curr = curr.next;
-    printf("After %d is: %d\n", itr, curr.value);
+    int result = curr.value;
 
     # clean up
     Node* to_free = zero.next;
@@ -42,4 +51,23 @@ pub fn main() {
         free(to_free);
         to_free = next;
     }
+
+    return result;
+}
+
+fn part_two(int iterations, int steps) {
+    int n = 1;
+    int s = 0;
+    int after_zero = -1;
+
+    while n <= iterations {
+        int e = (s + steps) % n;
+        if e == 0 {
+            after_zero = n;
+        }
+        s = e + 1;
+        n = n + 1;
+    }
+
+    return after_zero;
 }
