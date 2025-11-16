@@ -106,5 +106,6 @@ EOF
 
 make
 git add .
+git commit -am "skeleton for $NAME"
 idea Makefile
 idea "${NAME}.jn"
