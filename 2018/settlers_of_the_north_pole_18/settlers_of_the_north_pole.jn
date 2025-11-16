@@ -1,22 +1,86 @@
 pub fn main() {
     Map* map = Map__from_input();
-    printf("Map is %dx%d w/ %d grid elements!\n", map.width(), map.height(), strlen(map.grid()));
+    int len = strlen(map.grid());
+    printf("Map is %dx%d w/ %d grid elements!\n", map.width(), map.height(), len);
 
-    # todo: can this happen statically, instead of at runtime?
     int** adj = build_eight_way_adjacent(map.width(), map.height());
-    int i = 0;
-    while adj[i] != null {
-        printf("adj[%d]: ", i);
-        print_adj_array(adj[i]);
-        puts("");
+#    int i = 0;
+#    while adj[i] != null {
+#        printf("adj[%d]: ", i);
+#        print_adj_array(adj[i]);
+#        puts("");
+#        i = i + 1;
+#    }
+
+#    puts("Initial state:");
+#    map.print();
+    int i = 1;
+    while i <= 10 {
+#        printf("\nAfter %d minutes:\n", i);
+        map.next_tick(next_grid(map.grid(), adj, len));
+#        map.print();
         i = i + 1;
     }
-
-    puts("Initial state:");
     map.print();
     printf("Resource Value: %d\n", map.resource_value());
     free_adjacent(adj);
     map.drop();
+}
+
+fn next_grid(char* grid, int** adj, int len) {
+    char* next = malloc(len + 1);
+    int i = 0;
+    while i < len {
+        int* ns = adj[i];
+        next[i] = next_char(grid, grid[i], ns);
+        i = i + 1;
+    }
+    next[i] = null; # terminate the "string"
+    return next;
+}
+
+fn next_char(char* grid, char curr, int* adj) {
+    if curr == OPEN {
+    if has_three(grid, adj, WOODS) { return WOODS; }
+        return curr;
+    }
+    if curr == WOODS {
+    if has_three(grid, adj, YARD) { return YARD; }
+        return curr;
+    }
+    # must be a yard...
+    bool yard = false;
+    bool woods = false;
+    int n = adj;
+    while *n >= 0 {
+        char c = grid[*n];
+        n = n + sizeof(int);
+        if c == YARD {
+            if woods { return YARD; }
+            yard = true;
+            again;
+        }
+        if c == WOODS {
+            if yard { return YARD; }
+            woods = true;
+        }
+    }
+    return OPEN;
+}
+
+fn has_three(char* grid, int* adj, char target) {
+    int hits = 0;
+    int n = adj;
+    while *n >= 0 {
+        if (grid[*n] == target) {
+            if hits == 2 {
+                return true;
+            }
+            hits = hits + 1;
+        }
+        n = n + sizeof(int);
+    }
+    return false;
 }
 
 fn free_adjacent(int** adj) {
@@ -54,6 +118,7 @@ fn build_eight_way_adjacent(int width, int height) { # todo: util?
             arr[5] = nr - 1;
             arr[6] = nr;
             arr[7] = nr + 1;
+            arr[8] = -1;
             adj[i] = arr;
             x = x - 1;
         }
@@ -65,19 +130,21 @@ fn build_eight_way_adjacent(int width, int height) { # todo: util?
     while x > 0 {
         i = x;
         nr = i + width;
-        adj[i] = arrlit5(i - 1,
+        adj[i] = arrlit6(i - 1,
                          i + 1,
                          nr - 1,
                          nr,
-                         nr + 1);
+                         nr + 1,
+                         -1);
 
         i = (height - 1) * width + x;
         pr = i - width;
-        adj[i] = arrlit5(pr - 1,
+        adj[i] = arrlit6(pr - 1,
                          pr,
                          pr + 1,
                          i - 1,
-                         i + 1);
+                         i + 1,
+                         -1);
         x = x - 1;
     }
 
@@ -87,20 +154,22 @@ fn build_eight_way_adjacent(int width, int height) { # todo: util?
         i = y * width;
         nr = i + width;
         pr = i - width;
-        adj[i] = arrlit5(pr,
+        adj[i] = arrlit6(pr,
                          pr + 1,
                          i + 1,
                          nr,
-                         nr + 1);
+                         nr + 1,
+                         -1);
 
         i = (y + 1) * width - 1;
         nr = i + width;
         pr = i - width;
-        adj[i] = arrlit5(pr -1,
+        adj[i] = arrlit6(pr -1,
                          pr,
                          i - 1,
                          nr - 1,
-                         nr);
+                         nr,
+                         -1);
         y = y - 1;
     }
 
@@ -108,60 +177,64 @@ fn build_eight_way_adjacent(int width, int height) { # todo: util?
     # top left corner,
     i = 0;
     nr = i + width;
-    adj[i] = arrlit3(i + 1,
+    adj[i] = arrlit4(i + 1,
                      nr,
-                     nr + 1);
+                     nr + 1,
+                     -1);
 
     # top right corner,
     i = width - 1;
     nr = i + width;
-    adj[i] = arrlit3(i - 1,
+    adj[i] = arrlit4(i - 1,
                      nr - 1,
-                     nr);
+                     nr,
+                     -1);
 
     # bottom right corner,
     i = height * width - 1;
     pr = i - width;
-    adj[i] = arrlit3(pr - 1,
+    adj[i] = arrlit4(pr - 1,
                      pr,
-                     i - 1);
+                     i - 1,
+                     -1);
 
     # and bottom left corner.
     i = (height - 1) * width;
     pr = i - width;
-    adj[i] = arrlit3(pr,
+    adj[i] = arrlit4(pr,
                      pr + 1,
-                     i + 1);
+                     i + 1,
+                     -1);
 
     # fin.
     return adj;
 }
 
-fn arrlit3(void a, void b, void c) { # todo: util?
+fn arrlit4(void a, void b, void c, void d) { # todo: array literals, please?
     void* arr = calloc(4, sizeof(void));
     arr[0] = a;
     arr[1] = b;
     arr[2] = c;
+    arr[3] = d;
     return arr;
 }
 
-fn arrlit5(void a, void b, void c, void d, void e) { # todo: util?
+fn arrlit6(void a, void b, void c, void d, void e, void f) {
     void* arr = calloc(6, sizeof(void));
     arr[0] = a;
     arr[1] = b;
     arr[2] = c;
     arr[3] = d;
     arr[4] = e;
+    arr[5] = f;
     return arr;
 }
 
-# No adj array will be empty, so ALWAYS print the first, since it may be a zero
-# which ISN'T the terminating null...
 fn print_adj_array(int* arr) { # todo: util-ish??
     putchar('[');
     printf("%d", *arr);
     arr = arr + sizeof(int);
-    while *arr != null {
+    while *arr >= 0 {
         printf(",%d", *arr);
         arr = arr + sizeof(int);
     }

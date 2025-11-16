@@ -1,9 +1,9 @@
 struct StringBuilder;
 
 # compile-time constants would be nice...
-char OPEN = '.';
-char WOODS = '|';
-char YARD = '#';
+pub char OPEN = '.';
+pub char WOODS = '|';
+pub char YARD = '#';
 
 pub struct Map {
     # number of acres wide
