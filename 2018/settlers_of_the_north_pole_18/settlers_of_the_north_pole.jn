@@ -1,9 +1,169 @@
 pub fn main() {
-    puts("Hello, settlers_of_the_north_pole!");
-    int line_count = 0;
-    while !iseof() {
-        free(read_line());
-        line_count = line_count + 1;
+    Map* map = Map__from_input();
+    printf("Map is %dx%d w/ %d grid elements!\n", map.width(), map.height(), strlen(map.grid()));
+
+    # todo: can this happen statically, instead of at runtime?
+    int** adj = build_eight_way_adjacent(map.width(), map.height());
+    int i = 0;
+    while adj[i] != null {
+        printf("adj[%d]: ", i);
+        print_adj_array(adj[i]);
+        puts("");
+        i = i + 1;
     }
-    printf("There are %d lines of input waiting!\n", line_count);
+
+    puts("Initial state:");
+    map.print();
+    printf("Resource Value: %d\n", map.resource_value());
+    free_adjacent(adj);
+    map.drop();
+}
+
+fn free_adjacent(int** adj) {
+    int i = 0;
+    while adj[i] != null {
+        free(adj[i]);
+        i = i + 1;
+    }
+    free(adj);
+}
+
+fn build_eight_way_adjacent(int width, int height) { # todo: util?
+    if width < 3 { eprintf("Width must be at least 3\n"); exit(3); }
+    if height < 3 { eprintf("Height must be at least 3\n"); exit(3); }
+    int** adj = calloc(width * height + 1, sizeof(int*));
+    int y; int x; int i;
+    # compiler temporaries for common subexpressions...
+    int pr; int nr;
+    int* arr;
+
+    # first, the middle...
+    y = height - 2;
+    while y > 0 {
+        x = width - 2;
+        while x > 0 {
+            i = y * width + x;
+            arr = calloc(9, sizeof(int));
+            pr = i - width;
+            nr = i + width;
+            arr[0] = pr - 1;
+            arr[1] = pr;
+            arr[2] = pr + 1;
+            arr[3] = i - 1;
+            arr[4] = i + 1;
+            arr[5] = nr - 1;
+            arr[6] = nr;
+            arr[7] = nr + 1;
+            adj[i] = arr;
+            x = x - 1;
+        }
+        y = y - 1;
+    }
+
+    # next, top and bottom...
+    x = width - 2;
+    while x > 0 {
+        i = x;
+        nr = i + width;
+        adj[i] = arrlit5(i - 1,
+                         i + 1,
+                         nr - 1,
+                         nr,
+                         nr + 1);
+
+        i = (height - 1) * width + x;
+        pr = i - width;
+        adj[i] = arrlit5(pr - 1,
+                         pr,
+                         pr + 1,
+                         i - 1,
+                         i + 1);
+        x = x - 1;
+    }
+
+    # then left and right...
+    y = height - 2;
+    while y > 0 {
+        i = y * width;
+        nr = i + width;
+        pr = i - width;
+        adj[i] = arrlit5(pr,
+                         pr + 1,
+                         i + 1,
+                         nr,
+                         nr + 1);
+
+        i = (y + 1) * width - 1;
+        nr = i + width;
+        pr = i - width;
+        adj[i] = arrlit5(pr -1,
+                         pr,
+                         i - 1,
+                         nr - 1,
+                         nr);
+        y = y - 1;
+    }
+
+    # and finally...
+    # top left corner,
+    i = 0;
+    nr = i + width;
+    adj[i] = arrlit3(i + 1,
+                     nr,
+                     nr + 1);
+
+    # top right corner,
+    i = width - 1;
+    nr = i + width;
+    adj[i] = arrlit3(i - 1,
+                     nr - 1,
+                     nr);
+
+    # bottom right corner,
+    i = height * width - 1;
+    pr = i - width;
+    adj[i] = arrlit3(pr - 1,
+                     pr,
+                     i - 1);
+
+    # and bottom left corner.
+    i = (height - 1) * width;
+    pr = i - width;
+    adj[i] = arrlit3(pr,
+                     pr + 1,
+                     i + 1);
+
+    # fin.
+    return adj;
+}
+
+fn arrlit3(void a, void b, void c) { # todo: util?
+    void* arr = calloc(4, sizeof(void));
+    arr[0] = a;
+    arr[1] = b;
+    arr[2] = c;
+    return arr;
+}
+
+fn arrlit5(void a, void b, void c, void d, void e) { # todo: util?
+    void* arr = calloc(6, sizeof(void));
+    arr[0] = a;
+    arr[1] = b;
+    arr[2] = c;
+    arr[3] = d;
+    arr[4] = e;
+    return arr;
+}
+
+# No adj array will be empty, so ALWAYS print the first, since it may be a zero
+# which ISN'T the terminating null...
+fn print_adj_array(int* arr) { # todo: util-ish??
+    putchar('[');
+    printf("%d", *arr);
+    arr = arr + sizeof(int);
+    while *arr != null {
+        printf(",%d", *arr);
+        arr = arr + sizeof(int);
+    }
+    putchar(']');
 }
