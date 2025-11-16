@@ -1,0 +1,297 @@
+pub fn main() {
+    Map* map = Map__from_input();
+    int len = strlen(map.grid());
+    printf("Map is %dx%d w/ %d grid elements!\n", map.width(), map.height(), len);
+
+    int** adj = build_eight_way_adjacent(map.width(), map.height());
+#    int i = 0;
+#    while adj[i] != null {
+#        printf("adj[%d]: ", i);
+#        print_adj_array(adj[i]);
+#        puts("");
+#        i = i + 1;
+#    }
+
+#    puts("Initial state:");
+#    map.print();
+    while map.ticks() < 10 {
+#        printf("\nAfter %d minutes:\n", i);
+        free(map.next_tick(next_grid(map.grid(), adj, len)));
+#        map.print();
+    }
+    map.print();
+    printf("Resource value after %d minutes: %d\n", map.ticks(), map.resource_value());
+
+    # it started looking cyclic around 500, so get well beyond there
+    while map.ticks() < 1000 {
+        free(map.next_tick(next_grid(map.grid(), adj, len)));
+    }
+    printf("Resource value after %d minutes: %d\n", map.ticks(), map.resource_value());
+
+    # find a cycle and measure its length
+    int cycle_length = find_cycle_length(map, adj, len);
+    printf("Cycle from %d, with length %d\n", map.ticks(), cycle_length);
+
+    # advance the needed partial cycle for the target
+    int target_minutes = 1000000000;
+    int advance = (target_minutes - map.ticks()) % cycle_length;
+    while advance > 0 {
+        free(map.next_tick(next_grid(map.grid(), adj, len)));
+        advance = advance - 1;
+    }
+    printf("Projected value after %d minutes: %d\n", target_minutes, map.resource_value());
+
+    free_adjacent(adj);
+    map.drop();
+}
+
+# hash helpers todo: don't make callers supply these (for primitives)?
+fn id(void a) { return a; }
+fn eq(void a, void b) { return a == b; }
+
+fn find_cycle_length(Map* map, int** adj, int len) {
+    # Find a repeated map, and save its value and grid.
+    int repeated_value = -1;
+    char* repeated_grid = null;
+    HashMap* history = HashMap__new_owned(&id, &eq, null, &free);
+    while true {
+        int rv = map.resource_value();
+        char* old_grid = map.next_tick(next_grid(map.grid(), adj, len));
+        if history.contains(rv) {
+            if strcmp(old_grid, history.get(rv)) == 0 {
+                repeated_value = rv;
+                repeated_grid = old_grid;
+                done;
+            }
+        }
+        free(history.put(rv, old_grid));
+    }
+    history.drop();
+
+    # Measure the cycle length (didn't track it above...).
+    int cycle_length = 0;
+    while true {
+        cycle_length = cycle_length + 1;
+        if map.resource_value() == repeated_value {
+            done;
+        }
+        free(map.next_tick(next_grid(map.grid(), adj, len)));
+    }
+    free(repeated_grid);
+
+    return cycle_length;
+}
+
+fn next_grid(char* grid, int** adj, int len) {
+    char* next = malloc(len + 1);
+    int i = 0;
+    while i < len {
+        int* ns = adj[i];
+        next[i] = next_char(grid, grid[i], ns);
+        i = i + 1;
+    }
+    next[i] = null; # terminate the "string"
+    return next;
+}
+
+fn next_char(char* grid, char curr, int* adj) {
+    if curr == OPEN {
+    if has_three(grid, adj, WOODS) { return WOODS; }
+        return curr;
+    }
+    if curr == WOODS {
+    if has_three(grid, adj, YARD) { return YARD; }
+        return curr;
+    }
+    # must be a yard...
+    bool yard = false;
+    bool woods = false;
+    int n = adj;
+    while *n >= 0 {
+        char c = grid[*n];
+        n = n + sizeof(int);
+        if c == YARD {
+            if woods { return YARD; }
+            yard = true;
+            again;
+        }
+        if c == WOODS {
+            if yard { return YARD; }
+            woods = true;
+        }
+    }
+    return OPEN;
+}
+
+fn has_three(char* grid, int* adj, char target) {
+    int hits = 0;
+    int n = adj;
+    while *n >= 0 {
+        if (grid[*n] == target) {
+            if hits == 2 {
+                return true;
+            }
+            hits = hits + 1;
+        }
+        n = n + sizeof(int);
+    }
+    return false;
+}
+
+fn free_adjacent(int** adj) {
+    int i = 0;
+    while adj[i] != null {
+        free(adj[i]);
+        i = i + 1;
+    }
+    free(adj);
+}
+
+fn build_eight_way_adjacent(int width, int height) { # todo: util?
+    if width < 3 { eprintf("Width must be at least 3\n"); exit(3); }
+    if height < 3 { eprintf("Height must be at least 3\n"); exit(3); }
+    int** adj = calloc(width * height + 1, sizeof(int*));
+    int y; int x; int i;
+    # compiler temporaries for common subexpressions...
+    int pr; int nr;
+    int* arr;
+
+    # first, the middle...
+    y = height - 2;
+    while y > 0 {
+        x = width - 2;
+        while x > 0 {
+            i = y * width + x;
+            arr = calloc(9, sizeof(int));
+            pr = i - width;
+            nr = i + width;
+            arr[0] = pr - 1;
+            arr[1] = pr;
+            arr[2] = pr + 1;
+            arr[3] = i - 1;
+            arr[4] = i + 1;
+            arr[5] = nr - 1;
+            arr[6] = nr;
+            arr[7] = nr + 1;
+            arr[8] = -1;
+            adj[i] = arr;
+            x = x - 1;
+        }
+        y = y - 1;
+    }
+
+    # next, top and bottom...
+    x = width - 2;
+    while x > 0 {
+        i = x;
+        nr = i + width;
+        adj[i] = arrlit6(i - 1,
+                         i + 1,
+                         nr - 1,
+                         nr,
+                         nr + 1,
+                         -1);
+
+        i = (height - 1) * width + x;
+        pr = i - width;
+        adj[i] = arrlit6(pr - 1,
+                         pr,
+                         pr + 1,
+                         i - 1,
+                         i + 1,
+                         -1);
+        x = x - 1;
+    }
+
+    # then left and right...
+    y = height - 2;
+    while y > 0 {
+        i = y * width;
+        nr = i + width;
+        pr = i - width;
+        adj[i] = arrlit6(pr,
+                         pr + 1,
+                         i + 1,
+                         nr,
+                         nr + 1,
+                         -1);
+
+        i = (y + 1) * width - 1;
+        nr = i + width;
+        pr = i - width;
+        adj[i] = arrlit6(pr -1,
+                         pr,
+                         i - 1,
+                         nr - 1,
+                         nr,
+                         -1);
+        y = y - 1;
+    }
+
+    # and finally...
+    # top left corner,
+    i = 0;
+    nr = i + width;
+    adj[i] = arrlit4(i + 1,
+                     nr,
+                     nr + 1,
+                     -1);
+
+    # top right corner,
+    i = width - 1;
+    nr = i + width;
+    adj[i] = arrlit4(i - 1,
+                     nr - 1,
+                     nr,
+                     -1);
+
+    # bottom right corner,
+    i = height * width - 1;
+    pr = i - width;
+    adj[i] = arrlit4(pr - 1,
+                     pr,
+                     i - 1,
+                     -1);
+
+    # and bottom left corner.
+    i = (height - 1) * width;
+    pr = i - width;
+    adj[i] = arrlit4(pr,
+                     pr + 1,
+                     i + 1,
+                     -1);
+
+    # fin.
+    return adj;
+}
+
+fn arrlit4(void a, void b, void c, void d) { # todo: array literals, please?
+    void* arr = calloc(4, sizeof(void));
+    arr[0] = a;
+    arr[1] = b;
+    arr[2] = c;
+    arr[3] = d;
+    return arr;
+}
+
+fn arrlit6(void a, void b, void c, void d, void e, void f) {
+    void* arr = calloc(6, sizeof(void));
+    arr[0] = a;
+    arr[1] = b;
+    arr[2] = c;
+    arr[3] = d;
+    arr[4] = e;
+    arr[5] = f;
+    return arr;
+}
+
+fn print_adj_array(int* arr) { # todo: util-ish??
+    putchar('[');
+    printf("%d", *arr);
+    arr = arr + sizeof(int);
+    while *arr >= 0 {
+        printf(",%d", *arr);
+        arr = arr + sizeof(int);
+    }
+    putchar(']');
+}

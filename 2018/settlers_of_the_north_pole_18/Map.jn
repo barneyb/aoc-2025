@@ -1,0 +1,105 @@
+struct StringBuilder;
+
+# compile-time constants would be nice...
+pub char OPEN = '.';
+pub char WOODS = '|';
+pub char YARD = '#';
+
+pub struct Map {
+    # number of acres wide
+    int width,
+    # number of acres tall
+    int height,
+    # number of ticks elapsed
+    int ticks,
+    # mapping from acre number to its current state
+    char* grid,
+}
+
+pub fn Map_width(Map* self) { return self.width; }
+pub fn Map_height(Map* self) { return self.height; }
+pub fn Map_ticks(Map* self) { return self.ticks; }
+pub fn Map_grid(Map* self) { return self.grid; }
+
+pub fn Map_next_tick(Map* self, char* new_grid) {
+#    int len = strlen(new_grid);
+#    if len != self.width * self.height {
+#        eprintf("New grid has %d elements; expected %d (%d x %d)\n",
+#                len,
+#                self.width * self.height,
+#                self.width,
+#                self.height);
+#        exit(1);
+#    }
+    self.ticks = self.ticks + 1;
+    char* old_grid = self.grid;
+    self.grid = new_grid;
+    return old_grid;
+}
+
+pub fn Map_drop(Map* self) {
+    free(self.grid);
+    free(self);
+}
+
+pub fn Map_resource_value(Map* self) {
+    int woods = 0;
+    int yards = 0;
+    char c = self.grid + self.width * self.height;
+    while c > self.grid {
+        c = c - 1;
+        if *c == WOODS {
+            woods = woods + 1;
+            again;
+        }
+        if *c == YARD {
+            yards = yards + 1;
+        }
+    }
+    return woods * yards;
+}
+
+pub fn Map_print(Map* self) {
+    char* grid = self.grid;
+    int y = 0;
+    while y < self.height {
+        int x = 0;
+        while x < self.width {
+            putchar(grid[y * self.width + x]);
+            x = x + 1;
+        }
+        puts("");
+        y = y + 1;
+    }
+}
+
+pub fn Map__from_input() {
+    StringBuilder* sb = StringBuilder__new(100);
+    int line_count = 0;
+    int width = -1;
+    while !iseof() {
+        char* s = read_line();
+        line_count = line_count + 1;
+        int len = strlen(s);
+        sb.push_str(s);
+        free(s);
+        if width < 0 {
+            width = len;
+            again;
+        }
+        if width != len {
+            eprintf("Line %d is has len %d, but grid has width %d\n", line_count, len, width);
+            exit(1);
+        }
+    }
+    if width * line_count != sb.length() {
+        eprintf("Map is %dx%d, but has %d chars in it's grid, not %d?!\n", line_count, width, sb.length(), line_count * width);
+        exit(1);
+    }
+    Map* map = malloc(sizeof(Map));
+    map.width = width;
+    map.height = line_count;
+    map.ticks = 0;
+    map.grid = sb.into_chars();
+    return map;
+}

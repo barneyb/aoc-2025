@@ -15,5 +15,5 @@ fi
 
 ./run_all.sh
 git checkout master
-git merge $BRANCH
+git merge --no-edit $BRANCH
 ./run_all.sh
