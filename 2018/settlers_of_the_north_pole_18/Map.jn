@@ -22,18 +22,19 @@ pub fn Map_ticks(Map* self) { return self.ticks; }
 pub fn Map_grid(Map* self) { return self.grid; }
 
 pub fn Map_next_tick(Map* self, char* new_grid) {
-    int len = strlen(new_grid);
-    if len != self.width * self.height {
-        eprintf("New grid has %d elements; expected %d (%d x %d)\n",
-                len,
-                self.width * self.height,
-                self.width,
-                self.height);
-        exit(1);
-    }
+#    int len = strlen(new_grid);
+#    if len != self.width * self.height {
+#        eprintf("New grid has %d elements; expected %d (%d x %d)\n",
+#                len,
+#                self.width * self.height,
+#                self.width,
+#                self.height);
+#        exit(1);
+#    }
     self.ticks = self.ticks + 1;
-    free(self.grid);
+    char* old_grid = self.grid;
     self.grid = new_grid;
+    return old_grid;
 }
 
 pub fn Map_drop(Map* self) {

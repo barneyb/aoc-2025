@@ -18,6 +18,7 @@ ex1: $(PROG) ex1.txt
 $(OUT)/settlers_of_the_north_pole.s: \
 		$(OUT)/allocator.jstd.jnh \
 		$(OUT)/ArrayList.jstd.jnh \
+		$(OUT)/HashMap.jstd.jnh \
 		$(OUT)/io.jstd.jnh \
 		$(OUT)/string.jstd.jnh \
 		$(OUT)/sys.jstd.jnh \

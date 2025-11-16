@@ -14,17 +14,72 @@ pub fn main() {
 
 #    puts("Initial state:");
 #    map.print();
-    int i = 1;
-    while i <= 10 {
+    while map.ticks() < 10 {
 #        printf("\nAfter %d minutes:\n", i);
-        map.next_tick(next_grid(map.grid(), adj, len));
+        free(map.next_tick(next_grid(map.grid(), adj, len)));
 #        map.print();
-        i = i + 1;
     }
     map.print();
-    printf("Resource Value: %d\n", map.resource_value());
+    printf("Resource value after %d minutes: %d\n", map.ticks(), map.resource_value());
+
+    # it started looking cyclic around 500, so get well beyond there
+    while map.ticks() < 1000 {
+        free(map.next_tick(next_grid(map.grid(), adj, len)));
+    }
+    printf("Resource value after %d minutes: %d\n", map.ticks(), map.resource_value());
+
+    # find a cycle and measure its length
+    int cycle_length = find_cycle_length(map, adj, len);
+    printf("Cycle from %d, with length %d\n", map.ticks(), cycle_length);
+
+    # advance the needed partial cycle for the target
+    int target_minutes = 1000000000;
+    int advance = (target_minutes - map.ticks()) % cycle_length;
+    while advance > 0 {
+        free(map.next_tick(next_grid(map.grid(), adj, len)));
+        advance = advance - 1;
+    }
+    printf("Projected value after %d minutes: %d\n", target_minutes, map.resource_value());
+
     free_adjacent(adj);
     map.drop();
+}
+
+# hash helpers todo: don't make callers supply these (for primitives)?
+fn id(void a) { return a; }
+fn eq(void a, void b) { return a == b; }
+
+fn find_cycle_length(Map* map, int** adj, int len) {
+    # Find a repeated map, and save its value and grid.
+    int repeated_value = -1;
+    char* repeated_grid = null;
+    HashMap* history = HashMap__new_owned(&id, &eq, null, &free);
+    while true {
+        int rv = map.resource_value();
+        char* old_grid = map.next_tick(next_grid(map.grid(), adj, len));
+        if history.contains(rv) {
+            if strcmp(old_grid, history.get(rv)) == 0 {
+                repeated_value = rv;
+                repeated_grid = old_grid;
+                done;
+            }
+        }
+        free(history.put(rv, old_grid));
+    }
+    history.drop();
+
+    # Measure the cycle length (didn't track it above...).
+    int cycle_length = 0;
+    while true {
+        cycle_length = cycle_length + 1;
+        if map.resource_value() == repeated_value {
+            done;
+        }
+        free(map.next_tick(next_grid(map.grid(), adj, len)));
+    }
+    free(repeated_grid);
+
+    return cycle_length;
 }
 
 fn next_grid(char* grid, int** adj, int len) {
