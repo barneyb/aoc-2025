@@ -95,15 +95,16 @@ EOF
 cat << EOF > "${NAME}.jn"
 pub fn main() {
     puts("Hello, ${NAME}!");
-    int lines = 0;
+    int line_count = 0;
     while !iseof() {
         free(read_line());
-        lines = lines + 1;
+        line_count = line_count + 1;
     }
-    printf("There are %d lines of input waiting!\n", lines);
+    printf("There are %d lines of input waiting!\n", line_count);
 }
 EOF
 
 make
 git add .
+idea Makefile
 idea "${NAME}.jn"
