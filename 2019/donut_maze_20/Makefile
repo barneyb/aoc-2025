@@ -17,6 +17,9 @@ graph: $(PROG) ex1.txt
 ex1: $(PROG) ex1.txt
 	$(PROG) < ex1.txt
 
+ex2: $(PROG) ex2.txt
+	$(PROG) < ex2.txt
+
 $(OUT)/donut_maze.s: \
 		$(OUT)/allocator.jstd.jnh \
 		$(OUT)/ArrayList.jstd.jnh \

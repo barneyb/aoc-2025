@@ -42,7 +42,69 @@ pub fn main(int argc, char** argv) {
     printf("Start: %d (%d:%d)\n", m.start, m.start / m.width + 1, m.start % m.width + 1);
     printf("Goal : %d (%d:%d)\n", m.goal, m.goal / m.width + 1, m.goal % m.width + 1);
     printf("Adj #: %d\n", HashMap_size(m.adjacent));
+    printf("Port#: %d\n", ArrayList_size(m.portals));
+
+    add_portals_as_edges(m);
+
+    printf("Shortest Path: %d steps\n", path_length(m));
+
     m.drop();
+}
+
+struct State {
+    int pos,
+    int steps,
+}
+
+fn State__new(int pos, int steps) {
+    State* s = malloc(sizeof(State));
+    s.pos = pos;
+    s.steps = steps;
+    return s;
+}
+
+fn path_length(Map* m) {
+    Queue* q = Queue__new_owned(&free);
+    q.push(State__new(m.start, 0));
+    HashMap* visited = HashMap__new(&id, &cmp);
+    int len = -1;
+
+    while q.size() > 0 {
+        State* s = q.remove();
+        if visited.contains(s.pos) {
+            free(s);
+            again;
+        }
+        if s.pos == m.goal {
+            len = s.steps;
+            free(s);
+            done;
+        }
+        visited.put(s.pos, null);
+        ArrayList* adj = HashMap_get(m.adjacent, s.pos);
+        int i = adj.size();
+        while i > 0 {
+            i = i - 1;
+            q.push(State__new(adj.get(i), s.steps + 1));
+        }
+        free(s);
+    }
+
+    visited.drop();
+    q.drop();
+    return len;
+}
+
+fn add_portals_as_edges(Map* m) {
+    HashMap* adjacent = m.adjacent;
+    ArrayList* portals = m.portals;
+    int i = 0;
+    while i < portals.size() {
+        Portal* p = portals.get(i);
+        ArrayList_push(adjacent.get(p.u()), p.v());
+        ArrayList_push(adjacent.get(p.v()), p.u());
+        i = i + 1;
+    }
 }
 
 fn graphviz(Map* m) {
