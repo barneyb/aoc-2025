@@ -1,30 +1,98 @@
 pub struct HashMap;
+struct Portal; # todo: shouldn't be needed
+struct Queue; # todo: shouldn't be needed
+pub struct ArrayList;
 
 pub struct Map {
     int width,
     int start,
     int goal,
+    # Map<int, ArrayList<int>>
     HashMap* adjacent,
+    ArrayList* portals,
 }
 
-pub fn Map__new(int width, int start, int goal, HashMap* adj) {
+pub fn Map__new(int width, int start, int goal, HashMap* adj, ArrayList* portals) {
     Map* m = malloc(sizeof(Map));
     m.width = width;
     m.start = start;
     m.goal = goal;
     m.adjacent = adj;
+    m.portals = portals;
     return m;
 }
 
 fn Map_drop(Map* self) {
     HashMap_drop(self.adjacent);
+    ArrayList_drop(self.portals);
     free(self);
 }
 
-pub fn main() {
+# hash helpers todo: don't make callers supply these (for primitives). Three times?!
+fn id(void a) { return a; }
+fn cmp(void a, void b) { return a - b; }
+
+pub fn main(int argc, char** argv) {
     Map* m = parse();
+    if argc > 1 { if strcmp(argv[1], "--graph") == 0 {
+        graphviz(m);
+        m.drop();
+        return;
+    } }
     printf("Start: %d (%d:%d)\n", m.start, m.start / m.width + 1, m.start % m.width + 1);
     printf("Goal : %d (%d:%d)\n", m.goal, m.goal / m.width + 1, m.goal % m.width + 1);
-    printf("Adj  : %d\n", HashMap_size(m.adjacent));
+    printf("Adj #: %d\n", HashMap_size(m.adjacent));
     m.drop();
+}
+
+fn graphviz(Map* m) {
+    puts("");
+    puts("strict graph {");
+    printf("  %d [shape=polygon style=filled fillcolor=%s]\n", m.start, "lime");
+    printf("  %d [shape=polygon style=filled fillcolor=%s]\n", m.goal, "pink");
+    puts("");
+    Queue* q = Queue__new();
+    q.push(m.start);
+    HashMap* visited = HashMap__new(&id, &cmp);
+    HashMap* adjacent = m.adjacent;
+    HashMap* portals = build_portal_lookup(m.portals);
+    while q.size() > 0 {
+        int u = q.remove();
+        if visited.contains(u) { again; }
+        visited.put(u, u);
+        ArrayList* adj = adjacent.get(u);
+        int i = 0;
+        while i < adj.size() {
+            int v = adj.get(i);
+            q.push(v);
+            printf("  %d [label=r%d_c%d]\n", v, v / m.width + 1, v % m.width + 1);
+            # only draw edges once
+            if !visited.contains(v) {
+                printf("  %d -- %d", u, v);
+                Portal* p = portals.get(u);
+                if p != null { if p.u() == u {
+                    printf(" [label=%s penwidth=2 weight=0 color=red]", p.label());
+                } }
+                puts("");
+            }
+            i = i + 1;
+        }
+    }
+    puts("}");
+    puts("");
+    portals.drop();
+    visited.drop();
+    q.drop();
+}
+
+fn build_portal_lookup(ArrayList* portals) {
+    HashMap* map = HashMap__new(&id, &cmp);
+    int i = 0;
+    while i < portals.size() {
+        Portal* p = portals.get(i);
+        map.put(p.u(), p);
+        map.put(p.v(), p);
+        i = i + 1;
+    }
+    return map;
 }

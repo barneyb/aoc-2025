@@ -6,8 +6,11 @@ struct Parse {
     int width,
     int start,
     int goal,
-    HashMap* portals,
+    # Map<int, int>, where keys are encoded labels
+    HashMap* ends,
+    # Map<int, ArrayList<int>>, where keys are ids
     HashMap* adj,
+    ArrayList* portals,
 }
 
 # hash helpers todo: don't make callers supply these (for primitives). twice in a row now?
@@ -19,54 +22,56 @@ fn Parse__new() {
     parse.width = -1;
     parse.start = -1;
     parse.goal = -1;
-    parse.portals = HashMap__new(&id, &cmp);
+    parse.ends = HashMap__new(&id, &cmp);
     parse.adj = HashMap__new_owned(&id, &cmp, null, &ArrayList_drop);
+    parse.portals = ArrayList__new_owned(10, &Portal_drop);
     return parse;
 }
 
-fn Parse_join(Parse* self, int m, int n) {
+fn Parse_join(Parse* self, int u, int v) {
     HashMap* adj = self.adj;
-    ArrayList* mns = adj.get(m);
+    ArrayList* mns = adj.get(u);
     if mns == null {
         mns = ArrayList__new(4);
-        adj.put(m, mns);
+        adj.put(u, mns);
     }
-    mns.push(n);
-    ArrayList* nns = adj.get(n);
+    mns.push(v);
+    ArrayList* nns = adj.get(v);
     if nns == null {
         nns = ArrayList__new(4);
-        adj.put(n, nns);
+        adj.put(v, nns);
     }
-    nns.push(m);
+    nns.push(u);
 }
 
-fn Parse_portal(Parse* self, char a, char b, int n) {
+fn Parse_portal(Parse* self, char a, char b, int u) {
     if a == 'A' { if b == 'A' {
-        self.start = n;
+        self.start = u;
         return;
     } }
     if a == 'Z' { if b == 'Z' {
-        self.goal = n;
+        self.goal = u;
         return;
     } }
-#    printf("  %c%c @ %i (%d:%d)\n", a, b, n, n / self.width + 1, n % self.width + 1);
-    HashMap* portals = self.portals;
+#    printf("  %c%c @ %i (%d:%d)\n", a, b, u, u / self.width + 1, u % self.width + 1);
+    HashMap* ends = self.ends;
     int key = a * 256 + b; # todo: bitwise ops...
-    int m = portals.put(key, n);
-    if m != null {
-        portals.delete(key);
-        self.join(n, m);
+    int v = ends.put(key, u);
+    if v != null {
+        ends.delete(key);
+        self.join(u, v);
+        ArrayList_push(self.portals, Portal__new(u, v, a, b));
     }
 }
 
 fn Parse_into_map(Parse* self) {
-    Map* m = Map__new(self.width, self.start, self.goal, self.adj);
-    int open_portals = HashMap_size(self.portals);
+    Map* m = Map__new(self.width, self.start, self.goal, self.adj, self.portals);
+    int open_portals = HashMap_size(self.ends);
     if open_portals != 0 {
         eprintf("Not all portals were closed; %d remain open\n", open_portals);
         exit(2);
     }
-    HashMap_drop(self.portals);
+    HashMap_drop(self.ends);
     free(self);
     return m;
 }
@@ -91,31 +96,31 @@ pub fn parse() {
         while true {
             char tile = curr[c];
             if tile == null { done; }
-            int n = r * parse.width + c;
+            int u = r * parse.width + c;
             if tile == '.' {
                 if m1[c] == '.' {
-                    parse.join(n, n - parse.width);
+                    parse.join(u, u - parse.width);
                 }
                 if curr[c - 1] == '.' {
-                    parse.join(n, n - 1);
+                    parse.join(u, u - 1);
                 }
                 if m1[c] >= 'A' {
 #                    printf("portal %c%c above open at %d:%d\n", m2[c], m1[c], r + 1, c + 1);
-                    parse.portal(m2[c], m1[c], n);
+                    parse.portal(m2[c], m1[c], u);
                 }
                 if curr[c - 1] >= 'A' {
 #                    printf("portal %c%c left of open at %d:%d\n", curr[c - 2], curr[c - 1], r + 1, c + 1);
-                    parse.portal(curr[c - 2], curr[c - 1], n);
+                    parse.portal(curr[c - 2], curr[c - 1], u);
                 }
                 if curr[c + 1] >= 'A' {
 #                    printf("portal %c%c right of open at %d:%d\n", curr[c + 1], curr[c + 2], r + 1, c + 1);
-                    parse.portal(curr[c + 1], curr[c + 2], n);
+                    parse.portal(curr[c + 1], curr[c + 2], u);
                 }
             }
             if r > 1 { if tile >= 'A' {
                 if m2[c] == '.' { if m1[c] >= 'A' {
 #                    printf("portal %c%c below open at %d:%d\n", m1[c], tile, r - 1, c + 1);
-                    parse.portal(m1[c], tile, n - (parse.width * 2));
+                    parse.portal(m1[c], tile, u - (parse.width * 2));
                 } }
             } }
             c = c + 1;
