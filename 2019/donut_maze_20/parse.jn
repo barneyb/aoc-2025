@@ -59,7 +59,6 @@ fn Parse_portal(Parse* self, char a, char b, int u) {
     int v = ends.put(key, u);
     if v != null {
         ends.delete(key);
-        self.join(u, v);
         ArrayList_push(self.portals, Portal__new(u, v, a, b));
     }
 }

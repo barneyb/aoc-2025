@@ -48,51 +48,44 @@ pub fn main(int argc, char** argv) {
 fn graphviz(Map* m) {
     puts("");
     puts("strict graph {");
-    printf("  %d [shape=polygon style=filled fillcolor=%s]\n", m.start, "lime");
-    printf("  %d [shape=polygon style=filled fillcolor=%s]\n", m.goal, "pink");
+    printf("  graph [rank=min] { %d [shape=polygon style=filled fillcolor=%s] }\n", m.start, "lime");
+    printf("  graph [rank=max] { %d [shape=polygon style=filled fillcolor=%s] }\n", m.goal, "pink");
     puts("");
     Queue* q = Queue__new();
     q.push(m.start);
+
+    ArrayList* portals = m.portals;
+    int i = 0;
+    while i < portals.size() {
+        Portal* p = portals.get(i);
+        q.push(p.u());
+        q.push(p.v());
+        printf(" %d -- %d [label=%s penwidth=2 weight=0 color=red]\n", p.u(), p.v(), p.label());
+        i = i + 1;
+    }
+
     HashMap* visited = HashMap__new(&id, &cmp);
     HashMap* adjacent = m.adjacent;
-    HashMap* portals = build_portal_lookup(m.portals);
     while q.size() > 0 {
         int u = q.remove();
         if visited.contains(u) { again; }
         visited.put(u, u);
         ArrayList* adj = adjacent.get(u);
-        int i = 0;
+        i = 0;
         while i < adj.size() {
             int v = adj.get(i);
             q.push(v);
             printf("  %d [label=r%d_c%d]\n", v, v / m.width + 1, v % m.width + 1);
             # only draw edges once
             if !visited.contains(v) {
-                printf("  %d -- %d", u, v);
-                Portal* p = portals.get(u);
-                if p != null { if p.u() == u {
-                    printf(" [label=%s penwidth=2 weight=0 color=red]", p.label());
-                } }
-                puts("");
+                printf("  %d -- %d\n", u, v);
             }
             i = i + 1;
         }
     }
+
     puts("}");
     puts("");
-    portals.drop();
     visited.drop();
     q.drop();
-}
-
-fn build_portal_lookup(ArrayList* portals) {
-    HashMap* map = HashMap__new(&id, &cmp);
-    int i = 0;
-    while i < portals.size() {
-        Portal* p = portals.get(i);
-        map.put(p.u(), p);
-        map.put(p.v(), p);
-        i = i + 1;
-    }
-    return map;
 }
