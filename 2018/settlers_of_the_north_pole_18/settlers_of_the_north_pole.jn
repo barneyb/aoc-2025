@@ -47,13 +47,13 @@ pub fn main() {
 
 # hash helpers todo: don't make callers supply these (for primitives)?
 fn id(void a) { return a; }
-fn eq(void a, void b) { return a == b; }
+fn cmp(void a, void b) { return a - b; }
 
 fn find_cycle_length(Map* map, int** adj, int len) {
     # Find a repeated map, and save its value and grid.
     int repeated_value = -1;
     char* repeated_grid = null;
-    HashMap* history = HashMap__new_owned(&id, &eq, null, &free);
+    HashMap* history = HashMap__new_owned(&id, &cmp, null, &free);
     while true {
         int rv = map.resource_value();
         char* old_grid = map.next_tick(next_grid(map.grid(), adj, len));

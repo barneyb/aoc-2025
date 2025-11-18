@@ -1,9 +1,153 @@
+struct Map {
+    int width,
+    int start,
+    int goal,
+    HashMap* adjacent,
+}
+
+fn Map_drop(Map* self) {
+    HashMap_drop(self.adjacent);
+    free(self);
+}
+
 pub fn main() {
-    puts("Hello, donut_maze!");
-    int line_count = 0;
-    while !iseof() {
-        free(read_line());
-        line_count = line_count + 1;
+    Map* m = parse();
+    printf("Start: %d (%d:%d)\n", m.start, m.start / m.width + 1, m.start % m.width + 1);
+    printf("Goal : %d (%d:%d)\n", m.goal, m.goal / m.width + 1, m.goal % m.width + 1);
+    printf("Adj  : %d\n", HashMap_size(m.adjacent));
+    m.drop();
+}
+
+struct Parse {
+    int width,
+    int start,
+    int goal,
+    HashMap* portals,
+    HashMap* adj,
+}
+
+# hash helpers todo: don't make callers supply these (for primitives). twice in a row now?
+fn id(void a) { return a; }
+fn cmp(void a, void b) { return a - b; }
+
+fn Parse__new() {
+    Parse* parse = malloc(sizeof(Parse));
+    parse.width = -1;
+    parse.start = -1;
+    parse.goal = -1;
+    parse.portals = HashMap__new(&id, &cmp);
+    parse.adj = HashMap__new_owned(&id, &cmp, null, &ArrayList_drop);
+    return parse;
+}
+
+fn Parse_join(Parse* self, int m, int n) {
+    HashMap* adj = self.adj;
+    ArrayList* mns = adj.get(m);
+    if mns == null {
+        mns = ArrayList__new(4);
+        adj.put(m, mns);
     }
-    printf("There are %d lines of input waiting!\n", line_count);
+    mns.push(n);
+    ArrayList* nns = adj.get(n);
+    if nns == null {
+        nns = ArrayList__new(4);
+        adj.put(n, nns);
+    }
+    nns.push(m);
+}
+
+fn Parse_portal(Parse* self, char a, char b, int n) {
+    if a == 'A' { if b == 'A' {
+        self.start = n;
+        return;
+    } }
+    if a == 'Z' { if b == 'Z' {
+        self.goal = n;
+        return;
+    } }
+#    printf("  %c%c @ %i (%d:%d)\n", a, b, n, n / self.width + 1, n % self.width + 1);
+    HashMap* portals = self.portals;
+    int key = a * 256 + b; # todo: bitwise ops...
+    int m = portals.put(key, n);
+    if m != null {
+        portals.delete(key);
+        self.join(n, m);
+    }
+}
+
+fn Parse_into_map(Parse* self) {
+    Map* m = malloc(sizeof(Map));
+    m.width = self.width;
+    m.start = self.start;
+    m.goal = self.goal;
+    m.adjacent = self.adj;
+    int open_portals = HashMap_size(self.portals);
+    if open_portals != 0 {
+        eprintf("Not all portals were closed; %d remain open\n", open_portals);
+        exit(2);
+    }
+    HashMap_drop(self.portals);
+    free(self);
+    return m;
+}
+
+fn parse() {
+    Parse* parse = Parse__new();
+    int r = 0;
+
+    char* m2 = null;
+    char* m1 = null;
+    while !iseof() {
+        char* curr = read_line();
+        if m1 == null {
+            parse.width = strlen(curr);
+        }
+        if parse.width != strlen(curr) {
+            eprintf("Line %d has length %d, but expected %d\n", r, strlen(curr), parse.width);
+            exit(1);
+        }
+
+        int c = 0;
+        while true {
+            char tile = curr[c];
+            if tile == null { done; }
+            int n = r * parse.width + c;
+            if tile == '.' {
+                if m1[c] == '.' {
+                    parse.join(n, n - parse.width);
+                }
+                if curr[c - 1] == '.' {
+                    parse.join(n, n - 1);
+                }
+                if m1[c] >= 'A' {
+#                    printf("portal %c%c above open at %d:%d\n", m2[c], m1[c], r + 1, c + 1);
+                    parse.portal(m2[c], m1[c], n);
+                }
+                if curr[c - 1] >= 'A' {
+#                    printf("portal %c%c left of open at %d:%d\n", curr[c - 2], curr[c - 1], r + 1, c + 1);
+                    parse.portal(curr[c - 2], curr[c - 1], n);
+                }
+                if curr[c + 1] >= 'A' {
+#                    printf("portal %c%c right of open at %d:%d\n", curr[c + 1], curr[c + 2], r + 1, c + 1);
+                    parse.portal(curr[c + 1], curr[c + 2], n);
+                }
+            }
+            if r > 1 { if tile >= 'A' {
+                if m2[c] == '.' { if m1[c] >= 'A' {
+#                    printf("portal %c%c below open at %d:%d\n", m1[c], tile, r - 1, c + 1);
+                    parse.portal(m1[c], tile, n - (parse.width * 2));
+                } }
+            } }
+            c = c + 1;
+        }
+
+        free(m2);
+        m2 = m1;
+        m1 = curr;
+        r = r + 1;
+    }
+    free(m2);
+    free(m1);
+
+    return parse.into_map();
 }
