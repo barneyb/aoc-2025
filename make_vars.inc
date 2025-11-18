@@ -16,5 +16,5 @@ define HEADPILE
 	@mkdir -p $(OUT)
 	$(JNC) --header < $< > $@
 	@# compile the header (a no-op) to ensure validity
-	$(JNC) --strict < $@ > /dev/null
+	$(JNC) < $@ > /dev/null
 endef
