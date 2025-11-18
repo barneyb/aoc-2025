@@ -1,0 +1,9 @@
+pub fn main() {
+    puts("Hello, donut_maze!");
+    int line_count = 0;
+    while !iseof() {
+        free(read_line());
+        line_count = line_count + 1;
+    }
+    printf("There are %d lines of input waiting!\n", line_count);
+}
