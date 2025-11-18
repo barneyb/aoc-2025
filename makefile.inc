@@ -3,7 +3,7 @@ include ../../make_vars.inc
 # blindly assume that whatever includes this defines 'all' as its entrypoint
 __default__: all
 
-input.txt:
+input.txt: ~/.config/aocd/token
 	aocd $(YEAR) $(DAY) > /tmp/input.txt && mv /tmp/input.txt input.txt
 
 clean:
