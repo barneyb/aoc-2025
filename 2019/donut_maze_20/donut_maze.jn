@@ -110,8 +110,8 @@ fn add_portals_as_edges(Map* m) {
 fn graphviz(Map* m) {
     puts("");
     puts("strict graph {");
-    printf("  graph [rank=min] { %d [shape=polygon style=filled fillcolor=%s] }\n", m.start, "lime");
-    printf("  graph [rank=max] { %d [shape=polygon style=filled fillcolor=%s] }\n", m.goal, "pink");
+    printf("  graph [rank=source] { %d [shape=polygon style=filled fillcolor=%s] }\n", m.start, "lime");
+    printf("  graph [rank=sink] { %d [shape=polygon style=filled fillcolor=%s] }\n", m.goal, "pink");
     puts("");
     Queue* q = Queue__new();
     q.push(m.start);
@@ -122,7 +122,7 @@ fn graphviz(Map* m) {
         Portal* p = portals.get(i);
         q.push(p.u());
         q.push(p.v());
-        printf(" %d -- %d [label=%s penwidth=2 weight=0 color=red]\n", p.u(), p.v(), p.label());
+        printf(" %d -- %d [label=%s penwidth=2 weight=0 color=red dir=forward]\n", p.u(), p.v(), p.label());
         i = i + 1;
     }
 
@@ -137,7 +137,7 @@ fn graphviz(Map* m) {
         while i < adj.size() {
             int v = adj.get(i);
             q.push(v);
-            printf("  %d [label=r%d_c%d]\n", v, v / m.width + 1, v % m.width + 1);
+            printf("  %d [label=r%dc%d]\n", v, v / m.width + 1, v % m.width + 1);
             # only draw edges once
             if !visited.contains(v) {
                 printf("  %d -- %d\n", u, v);

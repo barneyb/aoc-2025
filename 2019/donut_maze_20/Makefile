@@ -10,8 +10,8 @@ OBJECTS = \
 all: $(PROG) input.txt
 	$(PROG) < input.txt
 
-graph: $(PROG) ex1.txt
-	$(PROG) --graph < ex1.txt > graph.dot
+graph: $(PROG) ex3.txt
+	$(PROG) --graph < ex3.txt > graph.dot
 	dot -O -Tsvg graph.dot
 
 ex1: $(PROG) ex1.txt
@@ -19,6 +19,9 @@ ex1: $(PROG) ex1.txt
 
 ex2: $(PROG) ex2.txt
 	$(PROG) < ex2.txt
+
+ex3: $(PROG) ex3.txt
+	$(PROG) < ex3.txt
 
 $(OUT)/donut_maze.s: \
 		$(OUT)/allocator.jstd.jnh \
