@@ -34,6 +34,12 @@ fn cmp(void a, void b) { return a - b; }
 
 pub fn main(int argc, char** argv) {
     Map* m = parse();
+
+    add_portals_as_edges(m);
+    # collapsing linear series of nodes is tricky, as both nodes and edges
+    # are represented uniformly, but can't be collapsed uniformly.
+    remove_dead_ends(m);
+
     if argc > 1 { if strcmp(argv[1], "--graph") == 0 {
         graphviz(m);
         m.drop();
@@ -43,8 +49,6 @@ pub fn main(int argc, char** argv) {
     printf("Goal : %d (%d:%d)\n", m.goal, m.goal / m.width + 1, m.goal % m.width + 1);
     printf("Adj #: %d\n", HashMap_size(m.adjacent));
     printf("Port#: %d\n", ArrayList_size(m.portals));
-
-    add_portals_as_edges(m);
 
     printf("Shortest Path: %d steps\n", path_length(m));
 
@@ -71,7 +75,7 @@ fn path_length(Map* m) {
 
     while q.size() > 0 {
         State* s = q.remove();
-        if visited.contains(s.pos) {
+        if visited.put(s.pos, 1) != null {
             free(s);
             again;
         }
@@ -80,7 +84,6 @@ fn path_length(Map* m) {
             free(s);
             done;
         }
-        visited.put(s.pos, null);
         ArrayList* adj = HashMap_get(m.adjacent, s.pos);
         int i = adj.size();
         while i > 0 {
@@ -93,6 +96,53 @@ fn path_length(Map* m) {
     visited.drop();
     q.drop();
     return len;
+}
+
+fn remove_dead_ends(Map* m) {
+    Queue* q = Queue__new_owned(&free);
+    q.push(m.start);
+    HashMap* visited = HashMap__new(&id, &cmp);
+
+    while q.size() > 0 {
+        int u = q.remove();
+        if visited.put(u, u) != null {
+            again;
+        }
+        ArrayList* adj = HashMap_get(m.adjacent, u);
+        if adj.size() == 1 { if u != m.start { if u != m.goal { # todo: comical lack of boolean ops!
+            dead_end(m, u, adj.get(0));
+            again;
+        } } }
+        int i = adj.size();
+        while i > 0 {
+            i = i - 1;
+            q.push(adj.get(i));
+        }
+    }
+
+    visited.drop();
+    q.drop();
+}
+
+fn dead_end(Map* m, int u, int v) {
+#    printf(" %d [style=filled fillcolor=yellow]\n", u);
+    ArrayList* adj = HashMap_get(m.adjacent, v);
+    # todo: complicated/expensive m.adjacent.get(v).remove(u)
+    ArrayList* wo = ArrayList__new(adj.size());
+    int i = 0;
+    while i < adj.size() {
+        int n = adj.get(i);
+        if n != u {
+            wo.push(n);
+        }
+        i = i + 1;
+    }
+    adj.drop();
+    HashMap_put(m.adjacent, v, wo);
+    if wo.size() == 1 {
+        dead_end(m, v, wo.get(0));
+        return;
+    }
 }
 
 fn add_portals_as_edges(Map* m) {
@@ -130,8 +180,7 @@ fn graphviz(Map* m) {
     HashMap* adjacent = m.adjacent;
     while q.size() > 0 {
         int u = q.remove();
-        if visited.contains(u) { again; }
-        visited.put(u, u);
+        if visited.put(u, u) != null { again; }
         ArrayList* adj = adjacent.get(u);
         i = 0;
         while i < adj.size() {
