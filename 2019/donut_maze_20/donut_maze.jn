@@ -32,16 +32,119 @@ fn Map_drop(Map* self) {
 fn id(void a) { return a; }
 fn cmp(void a, void b) { return a - b; }
 
+struct Edge {
+    int u,
+    int v,
+    void* weight, # REQUIRED to be a pointer to an owned
+                  # allocation with no owned subdata
+}
+
+fn Edge__new(int u, int v, void* weight) {
+    Edge* e = malloc(sizeof(Edge));
+    e.u = u;
+    e.v = v;
+    e.weight = weight;
+    return e;
+}
+
+fn Edge_drop(Edge* self) {
+    free(self.weight);
+    free(self);
+}
+
+struct Graph { # todo: this shouldn't have to precede first use
+    # Map<int, ArrayList<void>>
+    HashMap* edges,
+}
+
+fn Graph__new() {
+    Graph* g = malloc(sizeof(Graph));
+    g.edges = HashMap__new_owned(&id, &cmp, null, &ArrayList_drop);
+    return g;
+}
+
+fn Graph_drop(Graph* self) {
+    HashMap_drop(self.edges);
+    free(self);
+}
+
+fn Graph_add_edge(Graph* self, int u, int v, Weight* weight) {
+    ArrayList* adj = self.out_edges(u);
+    if adj == null {
+        adj = ArrayList__new_owned(2, &Edge_drop);
+        HashMap_put(self.edges, u, adj);
+    }
+    adj.push(Edge__new(u, v, weight));
+}
+
+fn Graph_out_degree(Graph* self, int u) {
+    ArrayList* adj = self.out_edges(u);
+    return adj.size();
+}
+
+fn Graph_out_edges(Graph* self, int u) {
+    return HashMap_get(self.edges, u);
+}
+
+struct Weight {
+    int len,
+    char* label, # not owned!
+    int portal_dir,
+}
+
+fn Weight__new(int len, char* label, int portal_dir) {
+    Weight* w = malloc(sizeof(Weight));
+    w.len = len;
+    w.label = label;
+    w.portal_dir = portal_dir;
+    return w;
+}
+
+fn build_graph(Map* m) {
+    Graph* g = Graph__new();
+    Queue* q = Queue__new();
+    q.push(m.start);
+    ArrayList* portals = m.portals;
+    int i = portals.size();
+    while i > 0 {
+        i = i - 1;
+        Portal* p = portals.get(i);
+        q.push(p.u());
+        q.push(p.v());
+        g.add_edge(p.u(), p.v(), Weight__new(1, p.label(), 1));
+        g.add_edge(p.v(), p.u(), Weight__new(1, p.label(), -1));
+    }
+    HashMap* visited = HashMap__new(&id, &cmp);
+
+    while q.size() > 0 {
+        int u = q.remove();
+        if visited.put(u, u) != null {
+            again;
+        }
+        ArrayList* adj = HashMap_get(m.adjacent, u);
+        i = adj.size();
+        while i > 0 {
+            i = i - 1;
+            int v = adj.get(i);
+            q.push(v);
+            g.add_edge(u, v, Weight__new(1, null, 0));
+            g.add_edge(v, u, Weight__new(1, null, 0));
+        }
+    }
+
+    visited.drop();
+    q.drop();
+    return g;
+}
+
 pub fn main(int argc, char** argv) {
     Map* m = parse();
 
-    add_portals_as_edges(m);
-    # collapsing linear series of nodes is tricky, as both nodes and edges
-    # are represented uniformly, but can't be collapsed uniformly.
-    remove_dead_ends(m);
+    Graph* g = build_graph(m);
 
     if argc > 1 { if strcmp(argv[1], "--graph") == 0 {
-        graphviz(m);
+        graphviz(m, g);
+        g.drop();
         m.drop();
         return;
     } }
@@ -52,6 +155,7 @@ pub fn main(int argc, char** argv) {
 
     printf("Shortest Path: %d steps\n", path_length(m));
 
+    g.drop();
     m.drop();
 }
 
@@ -98,66 +202,7 @@ fn path_length(Map* m) {
     return len;
 }
 
-fn remove_dead_ends(Map* m) {
-    Queue* q = Queue__new_owned(&free);
-    q.push(m.start);
-    HashMap* visited = HashMap__new(&id, &cmp);
-
-    while q.size() > 0 {
-        int u = q.remove();
-        if visited.put(u, u) != null {
-            again;
-        }
-        ArrayList* adj = HashMap_get(m.adjacent, u);
-        if adj.size() == 1 { if u != m.start { if u != m.goal { # todo: comical lack of boolean ops!
-            dead_end(m, u, adj.get(0));
-            again;
-        } } }
-        int i = adj.size();
-        while i > 0 {
-            i = i - 1;
-            q.push(adj.get(i));
-        }
-    }
-
-    visited.drop();
-    q.drop();
-}
-
-fn dead_end(Map* m, int u, int v) {
-#    printf(" %d [style=filled fillcolor=yellow]\n", u);
-    ArrayList* adj = HashMap_get(m.adjacent, v);
-    # todo: complicated/expensive m.adjacent.get(v).remove(u)
-    ArrayList* wo = ArrayList__new(adj.size());
-    int i = 0;
-    while i < adj.size() {
-        int n = adj.get(i);
-        if n != u {
-            wo.push(n);
-        }
-        i = i + 1;
-    }
-    adj.drop();
-    HashMap_put(m.adjacent, v, wo);
-    if wo.size() == 1 {
-        dead_end(m, v, wo.get(0));
-        return;
-    }
-}
-
-fn add_portals_as_edges(Map* m) {
-    HashMap* adjacent = m.adjacent;
-    ArrayList* portals = m.portals;
-    int i = 0;
-    while i < portals.size() {
-        Portal* p = portals.get(i);
-        ArrayList_push(adjacent.get(p.u()), p.v());
-        ArrayList_push(adjacent.get(p.v()), p.u());
-        i = i + 1;
-    }
-}
-
-fn graphviz(Map* m) {
+fn graphviz(Map* m, Graph* g) {
     puts("");
     puts("strict graph {");
     printf("  graph [rank=source] { %d [shape=polygon style=filled fillcolor=%s] }\n", m.start, "lime");
@@ -165,33 +210,42 @@ fn graphviz(Map* m) {
     puts("");
     Queue* q = Queue__new();
     q.push(m.start);
-
+    # also start at every portal
     ArrayList* portals = m.portals;
     int i = 0;
     while i < portals.size() {
         Portal* p = portals.get(i);
         q.push(p.u());
         q.push(p.v());
-        printf(" %d -- %d [label=%s penwidth=2 weight=0 color=red dir=forward]\n", p.u(), p.v(), p.label());
         i = i + 1;
     }
 
     HashMap* visited = HashMap__new(&id, &cmp);
-    HashMap* adjacent = m.adjacent;
     while q.size() > 0 {
         int u = q.remove();
         if visited.put(u, u) != null { again; }
-        ArrayList* adj = adjacent.get(u);
-        i = 0;
-        while i < adj.size() {
-            int v = adj.get(i);
-            q.push(v);
-            printf("  %d [label=r%dc%d]\n", v, v / m.width + 1, v % m.width + 1);
+        ArrayList* edges = g.out_edges(u);
+        i = edges.size();
+        while i > 0 {
+            i = i - 1;
+            Edge* e = edges.get(i);
+            q.push(e.v);
+            printf("  %d [label=r%dc%d]\n", e.v, e.v / m.width + 1, e.v % m.width + 1);
             # only draw edges once
-            if !visited.contains(v) {
-                printf("  %d -- %d\n", u, v);
+            if !visited.contains(e.v) {
+                printf("  %d -- %d", u, e.v);
+                Weight* w = e.weight;
+                if w.portal_dir == 0 {
+                    printf(" [label=%d]\n", w.len);
+                    again;
+                }
+                # it's be easier to draw portals from the map directly, but
+                # do it from the graph, as that's where the data will be
+                # read from during the walk.
+                char* dir = "forward";
+                if w.portal_dir < 0 { dir = "back"; }
+                printf(" [label=%s_%d penwidth=2 weight=0 color=red dir=%s]\n", w.label, w.len, dir);
             }
-            i = i + 1;
         }
     }
 

@@ -10,8 +10,8 @@ OBJECTS = \
 all: $(PROG) input.txt
 	$(PROG) < input.txt
 
-graph: $(PROG) ex3.txt
-	$(PROG) --graph < ex3.txt > graph.dot
+graph: $(PROG) ex1.txt
+	$(PROG) --graph < ex1.txt > graph.dot
 	dot -O -Tsvg graph.dot
 
 ex1: $(PROG) ex1.txt
