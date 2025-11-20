@@ -153,7 +153,7 @@ pub fn main(int argc, char** argv) {
     printf("Adj #: %d\n", HashMap_size(m.adjacent));
     printf("Port#: %d\n", ArrayList_size(m.portals));
 
-    printf("Shortest Path: %d steps\n", path_length(m));
+    printf("Shortest Path: %d steps\n", path_length(m, g));
 
     g.drop();
     m.drop();
@@ -171,7 +171,7 @@ fn State__new(int pos, int steps) {
     return s;
 }
 
-fn path_length(Map* m) {
+fn path_length(Map* m, Graph* g) {
     Queue* q = Queue__new_owned(&free);
     q.push(State__new(m.start, 0));
     HashMap* visited = HashMap__new(&id, &cmp);
@@ -188,11 +188,13 @@ fn path_length(Map* m) {
             free(s);
             done;
         }
-        ArrayList* adj = HashMap_get(m.adjacent, s.pos);
-        int i = adj.size();
+        ArrayList* edges = g.out_edges(s.pos);
+        int i = edges.size();
         while i > 0 {
             i = i - 1;
-            q.push(State__new(adj.get(i), s.steps + 1));
+            Edge* e = edges.get(i);
+            Weight* w = e.weight;
+            q.push(State__new(e.v, s.steps + w.len));
         }
         free(s);
     }
@@ -203,7 +205,6 @@ fn path_length(Map* m) {
 }
 
 fn graphviz(Map* m, Graph* g) {
-    puts("");
     puts("strict graph {");
     printf("  graph [rank=source] { %d [shape=polygon style=filled fillcolor=%s] }\n", m.start, "lime");
     printf("  graph [rank=sink] { %d [shape=polygon style=filled fillcolor=%s] }\n", m.goal, "pink");
@@ -250,7 +251,6 @@ fn graphviz(Map* m, Graph* g) {
     }
 
     puts("}");
-    puts("");
     visited.drop();
     q.drop();
 }
