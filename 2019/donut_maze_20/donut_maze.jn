@@ -28,10 +28,6 @@ fn Map_drop(Map* self) {
     free(self);
 }
 
-# hash helpers todo: don't make callers supply these (for primitives). Three times?!
-fn id(void a) { return a; }
-fn cmp(void a, void b) { return a - b; }
-
 struct Edge {
     int u,
     int v,
@@ -59,7 +55,7 @@ struct Graph { # todo: this shouldn't have to precede first use
 
 fn Graph__new() {
     Graph* g = malloc(sizeof(Graph));
-    g.edges = HashMap__new_owned(&id, &cmp, null, &ArrayList_drop);
+    g.edges = HashMap__new_owned(null, null, null, &ArrayList_drop);
     return g;
 }
 
@@ -114,7 +110,7 @@ fn build_graph(Map* m) {
         g.add_edge(p.u(), p.v(), Weight__new(1, p.label(), 1));
         g.add_edge(p.v(), p.u(), Weight__new(1, p.label(), -1));
     }
-    HashMap* visited = HashMap__new(&id, &cmp);
+    HashMap* visited = HashMap__new(null, null);
 
     while q.size() > 0 {
         int u = q.remove();
@@ -139,19 +135,18 @@ fn build_graph(Map* m) {
 
 pub fn main(int argc, char** argv) {
     Map* m = parse();
+    printf("# Start: %d (%d:%d)\n", m.start, m.start / m.width + 1, m.start % m.width + 1);
+    printf("# Goal : %d (%d:%d)\n", m.goal, m.goal / m.width + 1, m.goal % m.width + 1);
+    printf("# Adj #: %d\n", HashMap_size(m.adjacent));
+    printf("# Port#: %d\n", ArrayList_size(m.portals));
 
     Graph* g = build_graph(m);
-
     if argc > 1 { if strcmp(argv[1], "--graph") == 0 {
         graphviz(m, g);
         g.drop();
         m.drop();
         return;
     } }
-    printf("Start: %d (%d:%d)\n", m.start, m.start / m.width + 1, m.start % m.width + 1);
-    printf("Goal : %d (%d:%d)\n", m.goal, m.goal / m.width + 1, m.goal % m.width + 1);
-    printf("Adj #: %d\n", HashMap_size(m.adjacent));
-    printf("Port#: %d\n", ArrayList_size(m.portals));
 
     printf("Shortest Path: %d steps\n", path_length(m, g));
 
@@ -174,7 +169,7 @@ fn State__new(int pos, int steps) {
 fn path_length(Map* m, Graph* g) {
     Queue* q = Queue__new_owned(&free);
     q.push(State__new(m.start, 0));
-    HashMap* visited = HashMap__new(&id, &cmp);
+    HashMap* visited = HashMap__new(null, null);
     int len = -1;
 
     while q.size() > 0 {
@@ -221,7 +216,7 @@ fn graphviz(Map* m, Graph* g) {
         i = i + 1;
     }
 
-    HashMap* visited = HashMap__new(&id, &cmp);
+    HashMap* visited = HashMap__new(null, null);
     while q.size() > 0 {
         int u = q.remove();
         if visited.put(u, u) != null { again; }

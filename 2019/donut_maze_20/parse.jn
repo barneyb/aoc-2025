@@ -13,17 +13,13 @@ struct Parse {
     ArrayList* portals,
 }
 
-# hash helpers todo: don't make callers supply these (for primitives). twice in a row now?
-fn id(void a) { return a; }
-fn cmp(void a, void b) { return a - b; }
-
 fn Parse__new() {
     Parse* parse = malloc(sizeof(Parse));
     parse.width = -1;
     parse.start = -1;
     parse.goal = -1;
-    parse.ends = HashMap__new(&id, &cmp);
-    parse.adj = HashMap__new_owned(&id, &cmp, null, &ArrayList_drop);
+    parse.ends = HashMap__new(null, null);
+    parse.adj = HashMap__new_owned(null, null, null, &ArrayList_drop);
     parse.portals = ArrayList__new_owned(10, &Portal_drop);
     return parse;
 }
