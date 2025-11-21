@@ -240,7 +240,7 @@ fn graphviz(Map* m, Graph* g) {
                 # read from during the walk.
                 char* dir = "forward";
                 if w.portal_dir < 0 { dir = "back"; }
-                printf(" [label=%s_%d penwidth=2 weight=0 color=red dir=%s]\n", w.label, w.len, dir);
+                printf(" [label=%c%s : %d : %d%c penwidth=2 weight=0 color=red dir=%s]\n", '"', w.label, w.len, w.portal_dir, '"', dir);
             }
         }
     }

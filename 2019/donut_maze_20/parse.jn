@@ -40,7 +40,7 @@ fn Parse_join(Parse* self, int u, int v) {
     nns.push(u);
 }
 
-fn Parse_portal(Parse* self, char a, char b, int u, bool inside) {
+fn Parse_portal(Parse* self, char a, char b, int u, bool is_inside) {
     if a == 'A' { if b == 'A' {
         self.start = u;
         return;
@@ -54,8 +54,8 @@ fn Parse_portal(Parse* self, char a, char b, int u, bool inside) {
     int key = a * 256 + b; # todo: bitwise ops...
     int v = ends.put(key, u);
     if v != null {
-        if inside {
-            # flip it out -> in
+        if !is_inside {
+            # flip it in->out
             int t = u;
             u = v;
             v = t;
@@ -108,21 +108,21 @@ pub fn parse() {
                     parse.join(u, u - 1);
                 }
                 if m1[c] >= 'A' {
-#                    printf("portal %c%c above open at %d:%d (maze? %b)\n", m2[c], m1[c], r + 1, c + 1, maze_row);
+#                    eprintf("portal %c%c above open at %d:%d (inside? %b)\n", m2[c], m1[c], r + 1, c + 1, r > 2);
                     parse.portal(m2[c], m1[c], u, r > 2);
                 }
                 if curr[c - 1] >= 'A' {
-#                    printf("portal %c%c left of open at %d:%d (maze? %b)\n", curr[c - 2], curr[c - 1], r + 1, c + 1, maze_row);
+#                    eprintf("portal %c%c left of open at %d:%d (inside? %b)\n", curr[c - 2], curr[c - 1], r + 1, c + 1, c > 2);
                     parse.portal(curr[c - 2], curr[c - 1], u, c > 2);
                 }
                 if curr[c + 1] >= 'A' {
-#                    printf("portal %c%c right of open at %d:%d (maze? %b)\n", curr[c + 1], curr[c + 2], r + 1, c + 1, maze_row);
-                    parse.portal(curr[c + 1], curr[c + 2], u, c < parse.width - 2);
+#                    eprintf("portal %c%c right of open at %d:%d (inside? %b)\n", curr[c + 1], curr[c + 2], r + 1, c + 1, c < parse.width - 3);
+                    parse.portal(curr[c + 1], curr[c + 2], u, c < parse.width - 3);
                 }
             }
             if r > 1 { if tile >= 'A' {
                 if m2[c] == '.' { if m1[c] >= 'A' {
-#                    printf("portal %c%c below open at %d:%d (maze? %b)\n", m1[c], tile, r - 1, c + 1, maze_row);
+#                    eprintf("portal %c%c below open at %d:%d (inside? %b)\n", m1[c], tile, r - 1, c + 1, maze_row);
                     parse.portal(m1[c], tile, u - (parse.width * 2), maze_row);
                 } }
             } }
