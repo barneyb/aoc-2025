@@ -133,7 +133,45 @@ fn build_graph(Map* m) {
     return g;
 }
 
+fn get_opts(int argc, char** argv) { # todo: jstdlib?
+    HashMap* opts = HashMap__new_owned(&strhash, &strcmp, &free, &free);
+    int i = 1;
+    char* last_opt;
+    char* temp = "?";
+    while i < argc {
+        char* a = argv[i];
+        i = i + 1;
+        if a[0] == '-' {
+            if a[1] == '-' {
+                # long opt
+                last_opt = strclone(a + 2);
+                opts.put(last_opt, null);
+                again;
+            }
+            # short opt(s)
+            a = a + 1;
+            while *a != null {
+                *temp = *a;
+                last_opt = strclone(temp);
+                opts.put(last_opt, null);
+                a = a + 1;
+            }
+            again;
+        }
+        if last_opt != null {
+            # option value
+            opts.put(last_opt, a);
+            last_opt = null;
+            again;
+        }
+        # rando
+        opts.put(a, null);
+    }
+    return opts;
+}
+
 pub fn main(int argc, char** argv) {
+    HashMap* opts = get_opts(argc, argv);
     Map* m = parse();
     printf("# Start: %d (%d:%d)\n", m.start, m.start / m.width + 1, m.start % m.width + 1);
     printf("# Goal : %d (%d:%d)\n", m.goal, m.goal / m.width + 1, m.goal % m.width + 1);
@@ -141,26 +179,24 @@ pub fn main(int argc, char** argv) {
     printf("# Port#: %d\n", ArrayList_size(m.portals));
 
     Graph* g = build_graph(m);
-    if argc > 1 { if strcmp(argv[1], "--graph") == 0 {
+    if opts.contains("graph") {
         graphviz(m, g);
-        g.drop();
-        m.drop();
-        return;
-    } }
+    }
 
-    printf("Shortest Path (Portals): %d steps\n", path_length_portals(m, g));
+    if !opts.contains("graph") {
+        printf("Shortest Path (Portals): %d steps\n", path_length_portals(m, g));
 
-    if argc > 1 { if strcmp(argv[1], "--no-part-two") == 0 {
-        puts("Skipping part two.");
-        g.drop();
-        m.drop();
-        return;
-    } }
-
-    printf("Shortest Path (Nesting): %d steps\n", path_length_nesting(m, g));
+        if opts.contains("no-part-two") {
+            puts("Skipping part two.");
+        } # todo: not having else is ridiculous
+        if !opts.contains("no-part-two") {
+            printf("Shortest Path (Nesting): %d steps\n", path_length_nesting(m, g));
+        }
+    }
 
     g.drop();
     m.drop();
+    opts.drop();
 }
 
 struct State {
