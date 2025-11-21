@@ -59,8 +59,7 @@ pub fn main() {
         ArrayList* targets = replacements.get(src);
         if targets != null {
             free(src);
-        }
-        if targets == null {
+        } else {
             targets = ArrayList__new_owned(4, &free);
             replacements.put(src, targets);
         }
@@ -161,13 +160,11 @@ fn calibrate(HashMap* replacements, char* init) {
     while true {
         char c = init[i];
         if c == null { done; }
-        if c > 0x60 {
-            # lowercase
-            i = i + 1;
-            again;
+        if c <= 0x60 {
+            # uppercase
+            do_replacement(result, replacements, init, start, i);
+            start = i;
         }
-        do_replacement(result, replacements, init, start, i);
-        start = i;
         i = i + 1;
     }
     do_replacement(result, replacements, init, start, i);

@@ -96,11 +96,11 @@ fn next_grid(char* grid, int** adj, int len) {
 
 fn next_char(char* grid, char curr, int* adj) {
     if curr == OPEN {
-    if has_three(grid, adj, WOODS) { return WOODS; }
+        if has_three(grid, adj, WOODS) { return WOODS; }
         return curr;
     }
     if curr == WOODS {
-    if has_three(grid, adj, YARD) { return YARD; }
+        if has_three(grid, adj, YARD) { return YARD; }
         return curr;
     }
     # must be a yard...
@@ -113,9 +113,7 @@ fn next_char(char* grid, char curr, int* adj) {
         if c == YARD {
             if woods { return YARD; }
             yard = true;
-            again;
-        }
-        if c == WOODS {
+        } else if c == WOODS {
             if yard { return YARD; }
             woods = true;
         }

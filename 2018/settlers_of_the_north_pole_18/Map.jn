@@ -50,9 +50,7 @@ pub fn Map_resource_value(Map* self) {
         c = c - 1;
         if *c == WOODS {
             woods = woods + 1;
-            again;
-        }
-        if *c == YARD {
+        } else if *c == YARD {
             yards = yards + 1;
         }
     }
@@ -85,9 +83,7 @@ pub fn Map__from_input() {
         free(s);
         if width < 0 {
             width = len;
-            again;
-        }
-        if width != len {
+        } else if width != len {
             eprintf("Line %d is has len %d, but grid has width %d\n", line_count, len, width);
             exit(1);
         }
