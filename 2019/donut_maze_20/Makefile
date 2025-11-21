@@ -18,7 +18,7 @@ ex1: $(PROG) ex1.txt
 	$(PROG) < ex1.txt
 
 ex2: $(PROG) ex2.txt
-	$(PROG) < ex2.txt
+	$(PROG) --no-part-two < ex2.txt
 
 ex3: $(PROG) ex3.txt
 	$(PROG) < ex3.txt

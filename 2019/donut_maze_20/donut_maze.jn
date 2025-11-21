@@ -148,7 +148,16 @@ pub fn main(int argc, char** argv) {
         return;
     } }
 
-    printf("Shortest Path: %d steps\n", path_length(m, g));
+    printf("Shortest Path (Portals): %d steps\n", path_length_portals(m, g));
+
+    if argc > 1 { if strcmp(argv[1], "--no-part-two") == 0 {
+        puts("Skipping part two.");
+        g.drop();
+        m.drop();
+        return;
+    } }
+
+    printf("Shortest Path (Nesting): %d steps\n", path_length_nesting(m, g));
 
     g.drop();
     m.drop();
@@ -157,39 +166,68 @@ pub fn main(int argc, char** argv) {
 struct State {
     int pos,
     int steps,
+    int level,
 }
 
-fn State__new(int pos, int steps) {
+fn State__new(int pos, int steps, int level) {
     State* s = malloc(sizeof(State));
     s.pos = pos;
     s.steps = steps;
+    s.level = level;
     return s;
 }
 
-fn path_length(Map* m, Graph* g) {
+fn cross_edge_portals(State* s, Edge* e) {
+    Weight* w = e.weight;
+    return State__new(e.v, s.steps + w.len, 0);
+}
+
+fn path_length_portals(Map* m, Graph* g) {
+    return path_length_internal(m, g, &cross_edge_portals);
+}
+
+fn cross_edge_nesting(State* s, Edge* e) {
+    Weight* w = e.weight;
+    if w.portal_dir == 0 {
+        return State__new(e.v, s.steps + w.len, s.level);
+    }
+    int level = s.level + w.portal_dir;
+    if level < 0 {
+        return null;
+    }
+    return State__new(e.v, s.steps + w.len, level);
+}
+
+fn path_length_nesting(Map* m, Graph* g) {
+    return path_length_internal(m, g, &cross_edge_nesting);
+}
+
+fn path_length_internal(Map* m, Graph* g, void* cross_edge) {
     Queue* q = Queue__new_owned(&free);
-    q.push(State__new(m.start, 0));
+    q.push(State__new(m.start, 0, 0));
     HashMap* visited = HashMap__new(null, null);
     int len = -1;
 
     while q.size() > 0 {
         State* s = q.remove();
-        if visited.put(s.pos, 1) != null {
+        if visited.put(s.pos + s.level * 0xffffffff, 1) != null {
             free(s);
             again;
         }
-        if s.pos == m.goal {
+        if s.pos == m.goal { if s.level == 0 {
             len = s.steps;
             free(s);
             done;
-        }
+        } }
         ArrayList* edges = g.out_edges(s.pos);
         int i = edges.size();
         while i > 0 {
             i = i - 1;
             Edge* e = edges.get(i);
-            Weight* w = e.weight;
-            q.push(State__new(e.v, s.steps + w.len));
+            State* next = cross_edge(s, e);
+            if next != null {
+                q.push(next);
+            }
         }
         free(s);
     }
