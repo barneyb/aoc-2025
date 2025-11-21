@@ -146,26 +146,26 @@ fn get_opts(int argc, char** argv) { # todo: jstdlib?
                 # long opt
                 last_opt = strclone(a + 2);
                 opts.put(last_opt, null);
-                again;
-            }
-            # short opt(s)
-            a = a + 1;
-            while *a != null {
-                *temp = *a;
-                last_opt = strclone(temp);
-                opts.put(last_opt, null);
+            } else {
+                # short opt(s)
                 a = a + 1;
+                while *a != null {
+                    *temp = *a;
+                    last_opt = strclone(temp);
+                    opts.put(last_opt, null);
+                    a = a + 1;
+                }
             }
-            again;
+        } else {
+            if last_opt != null {
+                # option value
+                opts.put(last_opt, a);
+                last_opt = null;
+            } else {
+                # rando
+                opts.put(a, null);
+            }
         }
-        if last_opt != null {
-            # option value
-            opts.put(last_opt, a);
-            last_opt = null;
-            again;
-        }
-        # rando
-        opts.put(a, null);
     }
     return opts;
 }
@@ -181,15 +181,12 @@ pub fn main(int argc, char** argv) {
     Graph* g = build_graph(m);
     if opts.contains("graph") {
         graphviz(m, g);
-    }
-
-    if !opts.contains("graph") {
+    } else {
         printf("Shortest Path (Portals): %d steps\n", path_length_portals(m, g));
 
         if opts.contains("no-part-two") {
             puts("Skipping part two.");
-        } # todo: not having else is ridiculous
-        if !opts.contains("no-part-two") {
+        } else {
             printf("Shortest Path (Nesting): %d steps\n", path_length_nesting(m, g));
         }
     }
@@ -307,14 +304,14 @@ fn graphviz(Map* m, Graph* g) {
                 Weight* w = e.weight;
                 if w.portal_dir == 0 {
                     printf(" [label=%d]\n", w.len);
-                    again;
+                } else {
+                    # it's be easier to draw portals from the map directly, but
+                    # do it from the graph, as that's where the data will be
+                    # read from during the walk.
+                    char* dir = "forward";
+                    if w.portal_dir < 0 { dir = "back"; }
+                    printf(" [label=%c%s : %d : %d%c penwidth=2 weight=0 color=red dir=%s]\n", '"', w.label, w.len, w.portal_dir, '"', dir);
                 }
-                # it's be easier to draw portals from the map directly, but
-                # do it from the graph, as that's where the data will be
-                # read from during the walk.
-                char* dir = "forward";
-                if w.portal_dir < 0 { dir = "back"; }
-                printf(" [label=%c%s : %d : %d%c penwidth=2 weight=0 color=red dir=%s]\n", '"', w.label, w.len, w.portal_dir, '"', dir);
             }
         }
     }
