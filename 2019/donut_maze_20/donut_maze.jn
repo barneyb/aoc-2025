@@ -1,6 +1,6 @@
 pub struct HashMap;
-struct Portal; # todo: shouldn't be needed
-struct Queue; # todo: shouldn't be needed
+struct Portal;
+struct Queue;
 pub struct ArrayList;
 
 pub struct Map {
@@ -48,7 +48,7 @@ fn Edge_drop(Edge* self) {
     free(self);
 }
 
-struct Graph { # todo: this shouldn't have to precede first use
+struct Graph {
     # Map<int, ArrayList<void>>
     HashMap* edges,
 }
