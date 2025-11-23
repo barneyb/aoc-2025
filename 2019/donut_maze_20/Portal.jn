@@ -1,0 +1,26 @@
+pub struct Portal {
+    int u,
+    int v,
+    char* label,
+}
+
+pub fn Portal_u(Portal* self) { return self.u; }
+pub fn Portal_v(Portal* self) { return self.v; }
+pub fn Portal_label(Portal* self) { return self.label; }
+
+pub fn Portal__new(int u, int v, char a, char b) {
+    # todo: oh for sprintf
+    char* lbl = calloc(3, sizeof(char));
+    lbl[0] = a;
+    lbl[1] = b;
+    Portal* p = malloc(sizeof(Portal));
+    p.u = u;
+    p.v = v;
+    p.label = lbl;
+    return p;
+}
+
+pub fn Portal_drop(Portal* self) {
+    free(self.label);
+    free(self);
+}

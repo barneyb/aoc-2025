@@ -1,0 +1,42 @@
+struct HashMap;
+
+# I parse a command line into a HashMap<String, String> with owned values and
+# keys. Short options which are grouped will be returned as if specified
+# individually. An option may have zero or one space-separated value. Any other
+# non-option values will be included as keys.
+pub fn get_opts(int argc, char** argv) {
+    HashMap* opts = HashMap__new_owned(&strhash, &strcmp, &free, &free);
+    int i = 1;
+    char* last_opt;
+    char* temp = "-?";
+    while i < argc {
+        char* a = argv[i];
+        i = i + 1;
+        if a[0] == '-' {
+            if a[1] == '-' {
+                # long opt
+                last_opt = strclone(a);
+                opts.put(last_opt, null);
+            } else {
+                # short opt(s)
+                a = a + 1;
+                while *a != null {
+                    temp[1] = *a;
+                    last_opt = strclone(temp);
+                    opts.put(last_opt, null);
+                    a = a + 1;
+                }
+            }
+        } else {
+            if last_opt != null {
+                # option value
+                opts.put(last_opt, a);
+                last_opt = null;
+            } else {
+                # rando
+                opts.put(a, null);
+            }
+        }
+    }
+    return opts;
+}

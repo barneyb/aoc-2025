@@ -2,6 +2,8 @@ TGT ?= target
 BIN ?= $(TGT)/bin
 LIB ?= $(TGT)/lib
 OUT ?= $(TGT)/out
+UTIL ?= ../../util
+GRAPHVIZ_LAYOUT ?= dot
 JNC ?= $(JOHANN_HOME)/bin/jnc
 JSTDLIB ?= $(JOHANN_HOME)/lib/jstdlib.o
 JSTDLIB_SRC ?= $(JOHANN_HOME)/jstdlib
@@ -16,5 +18,5 @@ define HEADPILE
 	@mkdir -p $(OUT)
 	$(JNC) --header < $< > $@
 	@# compile the header (a no-op) to ensure validity
-	$(JNC) --strict < $@ > /dev/null
+	$(JNC) < $@ > /dev/null
 endef

@@ -1,0 +1,138 @@
+struct ArrayList;
+struct Map;
+struct HashMap;
+
+struct Parse {
+    int width,
+    int start,
+    int goal,
+    ArrayList* open_tiles,
+    # Map<int, int>, where keys are encoded labels
+    HashMap* ends,
+    # Map<int, ArrayList<int>>, where keys are ids
+    HashMap* adj,
+    ArrayList* portals,
+}
+
+fn Parse__new() {
+    Parse* parse = malloc(sizeof(Parse));
+    parse.width = -1;
+    parse.start = -1;
+    parse.goal = -1;
+    parse.open_tiles = ArrayList__new(10);
+    parse.ends = HashMap__new(null, null);
+    parse.adj = HashMap__new_owned(null, null, null, &ArrayList_drop);
+    parse.portals = ArrayList__new_owned(10, &Portal_drop);
+    return parse;
+}
+
+fn Parse_join(Parse* self, int u, int v) {
+    HashMap* adj = self.adj;
+    ArrayList* mns = adj.get(u);
+    if mns == null {
+        mns = ArrayList__new(4);
+        adj.put(u, mns);
+    }
+    mns.push(v);
+}
+
+fn Parse_portal(Parse* self, char a, char b, int u, bool is_inside) {
+    if a == 'A' { if b == 'A' {
+        self.start = u;
+        return;
+    } }
+    if a == 'Z' { if b == 'Z' {
+        self.goal = u;
+        return;
+    } }
+#    printf("  %c%c @ %i (%d:%d)\n", a, b, u, u / self.width + 1, u % self.width + 1);
+    HashMap* ends = self.ends;
+    int key = a * 256 + b; # todo: bitwise ops...
+    int v = ends.put(key, u);
+    if v != null {
+        if !is_inside {
+            # flip it in->out
+            int t = u;
+            u = v;
+            v = t;
+        }
+        ends.delete(key);
+        ArrayList_push(self.portals, Portal__new(u, v, a, b));
+    }
+}
+
+fn Parse_into_map(Parse* self) {
+    Map* m = Map__new(self.width, self.start, self.goal, self.open_tiles, self.adj, self.portals);
+    int open_portals = HashMap_size(self.ends);
+    if open_portals != 0 {
+        eprintf("Not all portals were closed; %d remain open\n", open_portals);
+        exit(2);
+    }
+    HashMap_drop(self.ends);
+    free(self);
+    return m;
+}
+
+pub fn parse() {
+    Parse* parse = Parse__new();
+    int r = 0;
+    bool maze_row;
+
+    char* m2 = null;
+    char* m1 = null;
+    while !iseof() {
+        char* curr = read_line();
+        if m1 == null {
+            parse.width = strlen(curr);
+        }
+        if parse.width != strlen(curr) {
+            eprintf("Line %d has length %d, but expected %d\n", r, strlen(curr), parse.width);
+            exit(1);
+        }
+        maze_row = curr[2] != ' ';
+
+        int c = 0;
+        while true {
+            char tile = curr[c];
+            if tile == null { done; }
+            int u = r * parse.width + c;
+            if tile == '.' {
+                ArrayList_push(parse.open_tiles, u);
+                if m1[c] == '.' {
+                    parse.join(u, u - parse.width);
+                }
+                if curr[c - 1] == '.' {
+                    parse.join(u, u - 1);
+                }
+                if m1[c] >= 'A' {
+#                    eprintf("portal %c%c above open at %d:%d (inside? %b)\n", m2[c], m1[c], r + 1, c + 1, r > 2);
+                    parse.portal(m2[c], m1[c], u, r > 2);
+                }
+                if curr[c - 1] >= 'A' {
+#                    eprintf("portal %c%c left of open at %d:%d (inside? %b)\n", curr[c - 2], curr[c - 1], r + 1, c + 1, c > 2);
+                    parse.portal(curr[c - 2], curr[c - 1], u, c > 2);
+                }
+                if curr[c + 1] >= 'A' {
+#                    eprintf("portal %c%c right of open at %d:%d (inside? %b)\n", curr[c + 1], curr[c + 2], r + 1, c + 1, c < parse.width - 3);
+                    parse.portal(curr[c + 1], curr[c + 2], u, c < parse.width - 3);
+                }
+            }
+            if r > 1 { if tile >= 'A' {
+                if m2[c] == '.' { if m1[c] >= 'A' {
+#                    eprintf("portal %c%c below open at %d:%d (inside? %b)\n", m1[c], tile, r - 1, c + 1, maze_row);
+                    parse.portal(m1[c], tile, u - (parse.width * 2), maze_row);
+                } }
+            } }
+            c = c + 1;
+        }
+
+        free(m2);
+        m2 = m1;
+        m1 = curr;
+        r = r + 1;
+    }
+    free(m2);
+    free(m1);
+
+    return parse.into_map();
+}

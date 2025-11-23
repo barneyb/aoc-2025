@@ -1,0 +1,91 @@
+# I am a weighted di-graph data type, represented as an adjacency list. Node
+# identifiers are always `int`. Edge weights are `void`, and can be either owned
+# or unowned, defined at the _graph_ level. If owned, they must be directly
+# `free`-able, without custom drop behavior.
+#
+# For an undirected graph, also add edge `v->u` for every edge `u->v` you add.
+#
+# For an unweighted di-graph, use `null` weights.
+
+struct ArrayList;
+
+# I am a single edge in the graph, from `u` to `v`.
+pub struct Edge {
+    int u,
+    int v,
+    void weight, # REQUIRED to be a pointer to an owned allocation with no
+                  # owned subdata (which includes the null pointer).
+}
+
+pub fn Edge_u(Edge* self) { return self.u; }
+pub fn Edge_v(Edge* self) { return self.v; }
+pub fn Edge_weight(Edge* self) { return self.weight; }
+
+fn Edge__new(int u, int v, void* weight) {
+    Edge* e = malloc(sizeof(Edge));
+    e.u = u;
+    e.v = v;
+    e.weight = weight;
+    return e;
+}
+
+fn Edge_drop(Edge* self) {
+    free(self);
+}
+
+fn Edge_drop_owned_weight(Edge* self) {
+    free(self.weight);
+    free(self);
+}
+
+# I am a graph.
+pub struct Graph {
+    void* drop_edge,
+    # Map<int, ArrayList<void>>
+    HashMap* edges,
+}
+
+# I create a new graph with unowned edge weights. If they're allocations, you
+# are responsible for ensuring their lifetime exceeds that of the graph.
+pub fn Graph__new() {
+    Graph* g = malloc(sizeof(Graph));
+    g.drop_edge = &Edge_drop;
+    g.edges = HashMap__new_owned(null, null, null, &ArrayList_drop);
+    return g;
+}
+
+# I create a new graph with owned edge weights.
+pub fn Graph__new_owned_weights() {
+    Graph* g = Graph__new();
+    g.drop_edge = &Edge_drop_owned_weight;
+    return g;
+}
+
+# I drop a graph, all its internal structure, and if owned, the edge weights.
+pub fn Graph_drop(Graph* self) {
+    HashMap_drop(self.edges);
+    free(self);
+}
+
+# I add a new edge to the graph. Parallel edges are allowed. The graph will or
+# will not take ownership of the passed weight, based on how it was constructed.
+pub fn Graph_add_edge(Graph* self, int u, int v, void weight) {
+    ArrayList* adj = self.out_edges(u);
+    if adj == null {
+        adj = ArrayList__new_owned(2, self.drop_edge);
+        HashMap_put(self.edges, u, adj);
+    }
+    adj.push(Edge__new(u, v, weight));
+}
+
+# I return the out-degree of node `u`.
+pub fn Graph_out_degree(Graph* self, int u) {
+    ArrayList* adj = self.out_edges(u);
+    if adj == null { return 0; }
+    return adj.size();
+}
+
+# I return an `ArrayList` containing the out `Edge`s of node `u`.
+pub fn Graph_out_edges(Graph* self, int u) {
+    return HashMap_get(self.edges, u);
+}
