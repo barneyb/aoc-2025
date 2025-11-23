@@ -15,7 +15,11 @@ for dir in $(find . -name Makefile -depth 3 \
     echo
     echo "$dir"
     pushd "$dir" >  /dev/null
-    make clean all
+    if [ "$1" = "--clean" ]; then
+        make clean
+    else
+        make clean all
+    fi
     popd > /dev/null
     echo
 done
