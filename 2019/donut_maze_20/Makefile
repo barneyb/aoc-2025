@@ -11,7 +11,7 @@ OBJECTS = \
 	$(LIB)/Portal.o \
 
 all: $(PROG) input.txt
-	$(PROG) < input.txt
+	time $(PROG) < input.txt
 
 clean_internal:
 	rm -f *.dot *.dot.svg
