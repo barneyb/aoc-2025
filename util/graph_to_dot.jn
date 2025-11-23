@@ -1,0 +1,92 @@
+# A couple different ways to render a `Graph` to STDOUT in DOT format. The two
+# label functions are optional, but if provided should emit (to STDOUT) a _valid
+# DOT attr value_ to label the given node/edge. It is supported to emit
+# additional attributes after the label's value (e.g., emit `XYZ color=red`).
+
+pub struct ArrayList;
+pub struct Graph;
+
+struct Edge;
+struct HashMap;
+struct Queue;
+
+# I print the given nodes of the given graph, along with all edges to other
+# nodes in the list. Edges to nodes not in the list will be omitted.
+pub fn Graph_dot_nodes(Graph* g,
+                       void* label_node,
+                       void* label_edge,
+                       ArrayList* nodes) {
+    HashMap* include = HashMap__new(null, null);
+    int i = nodes.size();
+    while i > 0 {
+        i = i - 1;
+        include.put(nodes.get(i), null);
+    }
+    puts("digraph {");
+    i = nodes.size();
+    while i > 0 {
+        i = i - 1;
+        int u = nodes.get(i);
+        dot_labeled_node(u, label_node);
+        ArrayList* edges = g.out_edges(u);
+        int j = edges.size();
+        while j > 0 {
+            j = j - 1;
+            Edge* e = edges.get(j);
+            if include.contains(e.v()) {
+                dot_labeled_edge(e, label_edge);
+            }
+        }
+    }
+    puts("}");
+    include.drop();
+}
+
+# I print the nodes of the given graph reachable from `start`, along with all
+# their edges. There is not currently a way to render multiple disconnected
+# subgraphs at once.
+pub fn Graph_dot_reachable(Graph* g,
+                           void* label_node,
+                           void* label_edge,
+                           int start) {
+    puts("digraph {");
+    Queue* q = Queue__new();
+    q.push(start);
+    HashMap* visited = HashMap__new(null, null);
+    while q.size() > 0 {
+        int u = q.remove();
+        if visited.put(u, u) != null { again; }
+        dot_labeled_node(u, label_node);
+        ArrayList* edges = g.out_edges(u);
+        int i = edges.size();
+        while i > 0 {
+            i = i - 1;
+            Edge* e = edges.get(i);
+            q.push(e.v());
+            dot_labeled_edge(e, label_edge);
+        }
+    }
+    puts("}");
+    visited.drop();
+    q.drop();
+}
+
+fn dot_labeled_node(int u,
+                    void* label_node) {
+    if label_node == null { return; }
+    printf("  %d [label=", u);
+    label_node(u);
+    puts("]");
+}
+
+fn dot_labeled_edge(Edge* e,
+                    void* label_edge) {
+    printf("  %d -> %d", e.u(), e.v());
+    if label_edge == null {
+        puts("");
+    } else {
+        printf(" [label=");
+        label_edge(e);
+        puts("]");
+    }
+}

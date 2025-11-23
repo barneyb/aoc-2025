@@ -44,6 +44,13 @@ $(OUT)/%.jstd.jnh: $(JSTDLIB_SRC)/%.jn $(JNC)
 %: $(BIN)/%
 	$(BIN)/$@
 
+# for programs capable of generating DOT files
+%.dot: %.txt $(PROG)
+	$(PROG) --dot < $< > $@
+
+%.$(GRAPHVIZ_LAYOUT).svg: %.dot
+	$(GRAPHVIZ_LAYOUT) -o$@ -Tsvg $<
+
 # don't delete intermediate files created by pattern rules
 .SECONDARY:
 # never clean up partially-compiled assembly files (with errors)

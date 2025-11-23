@@ -14,4 +14,13 @@ $(OUT)/Graph.s: \
 		Graph.jn
 	${CATPILE}
 
+$(OUT)/graph_to_dot.s: \
+		$(OUT)/ArrayList.jstd.jnh \
+		$(OUT)/HashMap.jstd.jnh \
+		$(OUT)/Queue.jstd.jnh \
+		$(OUT)/io.jstd.jnh \
+		$(OUT)/Graph.jnh \
+		graph_to_dot.jn
+	${CATPILE}
+
 include ../makefile.inc

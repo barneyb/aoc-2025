@@ -6,6 +6,7 @@ PROG = $(BIN)/$(NAME)
 OBJECTS = \
 	$(UTIL)/$(LIB)/get_opts.o \
 	$(UTIL)/$(LIB)/Graph.o \
+	$(UTIL)/$(LIB)/graph_to_dot.o \
 	$(LIB)/parse.o \
 	$(LIB)/Portal.o \
 
@@ -15,9 +16,8 @@ all: $(PROG) input.txt
 clean_internal:
 	rm -f *.dot *.dot.svg
 
-graph: $(PROG) ex1.txt
-	$(PROG) --graph < ex1.txt > graph.dot
-	dot -O -Tsvg graph.dot
+graph: ex1.$(GRAPHVIZ_LAYOUT).svg
+	mv ex1.$(GRAPHVIZ_LAYOUT).svg graph.dot.svg
 
 ex1: $(PROG) ex1.txt
 	$(PROG) < ex1.txt
@@ -33,6 +33,7 @@ $(OUT)/donut_maze.s: \
 		$(OUT)/ArrayList.jstd.jnh \
 		$(UTIL)/$(OUT)/get_opts.jnh \
 		$(UTIL)/$(OUT)/Graph.jnh \
+		$(UTIL)/$(OUT)/graph_to_dot.jnh \
 		$(OUT)/HashMap.jstd.jnh \
 		$(OUT)/io.jstd.jnh \
 		$(OUT)/parse.jnh \
