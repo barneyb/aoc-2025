@@ -15,8 +15,7 @@ for dir in $(find . -name Makefile -depth 3 \
     echo
     echo "$dir"
     pushd "$dir" >  /dev/null
-    make clean
-    time make all
+    make clean all
     popd > /dev/null
     echo
 done

@@ -7,7 +7,7 @@ OBJECTS = \
 	$(LIB)/Map.o \
 
 all: $(PROG) input.txt
-	$(PROG) < input.txt
+	time $(PROG) < input.txt
 
 ex0: $(PROG) ex0.txt
 	$(PROG) < ex0.txt

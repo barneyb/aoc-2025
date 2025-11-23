@@ -5,7 +5,7 @@ PROG = $(BIN)/science_for_hungry_people
 OBJECTS = \
 
 all: $(PROG) input.txt
-	$(PROG) < input.txt
+	time $(PROG) < input.txt
 
 # this is ... inelegant. but it works!
 $(OUT)/science_for_hungry_people.s: \

@@ -5,7 +5,7 @@ PROG = $(BIN)/spinlock
 OBJECTS = \
 
 all: $(PROG) input.txt
-	$(PROG) < input.txt
+	time $(PROG) < input.txt
 
 ex1: $(PROG)
 	echo 3 | $(PROG)

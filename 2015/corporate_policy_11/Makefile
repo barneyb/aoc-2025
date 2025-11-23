@@ -3,4 +3,4 @@ DAY=11
 include ../../makefile.inc
 
 all: $(BIN)/corporate_policy input.txt
-	$(BIN)/corporate_policy < input.txt
+	time $(BIN)/corporate_policy < input.txt

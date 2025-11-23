@@ -3,7 +3,7 @@ DAY=19
 include ../../make_vars.inc
 
 all: $(BIN)/medicine_for_rudolph input.txt
-	$(BIN)/medicine_for_rudolph < input.txt
+	time $(BIN)/medicine_for_rudolph < input.txt
 
 ex1: $(BIN)/medicine_for_rudolph
 	$(BIN)/medicine_for_rudolph < example_1.txt

@@ -4,8 +4,8 @@ include ../../make_vars.inc
 OBJECTS = \
 
 all: $(BIN)/dragon_checksum input.txt
-	$(BIN)/dragon_checksum 272 < input.txt
-	$(BIN)/dragon_checksum 35651584 < input.txt
+	time $(BIN)/dragon_checksum 272 < input.txt
+	time $(BIN)/dragon_checksum 35651584 < input.txt
 
 ex1: $(BIN)/dragon_checksum
 	$(BIN)/dragon_checksum 2 1

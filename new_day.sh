@@ -81,7 +81,7 @@ PROG = \$(BIN)/\$(NAME)
 OBJECTS = \\
 
 all: \$(PROG) input.txt
-	\$(PROG) < input.txt
+	time \$(PROG) < input.txt
 
 \$(OUT)/${NAME}.s: \\
 		\$(OUT)/allocator.jstd.jnh \\
