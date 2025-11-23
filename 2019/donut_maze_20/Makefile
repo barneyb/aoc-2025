@@ -4,11 +4,15 @@ NAME = donut_maze
 include ../../make_vars.inc
 PROG = $(BIN)/$(NAME)
 OBJECTS = \
+	$(UTIL)/$(LIB)/Graph.o \
 	$(LIB)/parse.o \
 	$(LIB)/Portal.o \
 
 all: $(PROG) input.txt
 	$(PROG) < input.txt
+
+clean_internal:
+	rm -f *.dot *.dot.svg
 
 graph: $(PROG) ex1.txt
 	$(PROG) --graph < ex1.txt > graph.dot
@@ -26,6 +30,7 @@ ex3: $(PROG) ex3.txt
 $(OUT)/donut_maze.s: \
 		$(OUT)/allocator.jstd.jnh \
 		$(OUT)/ArrayList.jstd.jnh \
+		$(UTIL)/$(OUT)/Graph.jnh \
 		$(OUT)/HashMap.jstd.jnh \
 		$(OUT)/io.jstd.jnh \
 		$(OUT)/parse.jnh \

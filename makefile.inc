@@ -1,4 +1,5 @@
-include ../../make_vars.inc
+# the util folder is only one deep, so use the "optional" leading dash
+-include ../../make_vars.inc
 
 # blindly assume that whatever includes this defines 'all' as its entrypoint
 __default__: all
@@ -6,9 +7,18 @@ __default__: all
 input.txt:
 	aocd $(YEAR) $(DAY) > /tmp/input.txt && mv /tmp/input.txt input.txt
 
-clean:
+clean: clean_internal
 	rm -rf $(TGT) input.txt
 
+# nothing, by default
+clean_internal:
+
+# allow arbitrary handoff to utils
+.PHONY: $(UTIL)/%
+$(UTIL)/%:
+	$(MAKE) -C $(UTIL) $*
+
+# main build targets
 $(BIN)/%: $(LIB)/%.o $(JSTDLIB) $(OBJECTS)
 	@mkdir -p $(BIN)
 	gcc $^ -o $@

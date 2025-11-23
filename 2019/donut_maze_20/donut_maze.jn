@@ -1,3 +1,5 @@
+struct Edge;
+struct Graph;
 pub struct HashMap;
 struct Portal;
 struct Queue;
@@ -31,60 +33,6 @@ fn Map_drop(Map* self) {
     free(self);
 }
 
-struct Edge {
-    int u,
-    int v,
-    void* weight, # REQUIRED to be a pointer to an owned
-                  # allocation with no owned subdata
-}
-
-fn Edge__new(int u, int v, void* weight) {
-    Edge* e = malloc(sizeof(Edge));
-    e.u = u;
-    e.v = v;
-    e.weight = weight;
-    return e;
-}
-
-fn Edge_drop(Edge* self) {
-    free(self.weight);
-    free(self);
-}
-
-struct Graph {
-    # Map<int, ArrayList<void>>
-    HashMap* edges,
-}
-
-fn Graph__new() {
-    Graph* g = malloc(sizeof(Graph));
-    g.edges = HashMap__new_owned(null, null, null, &ArrayList_drop);
-    return g;
-}
-
-fn Graph_drop(Graph* self) {
-    HashMap_drop(self.edges);
-    free(self);
-}
-
-fn Graph_add_edge(Graph* self, int u, int v, Weight* weight) {
-    ArrayList* adj = self.out_edges(u);
-    if adj == null {
-        adj = ArrayList__new_owned(2, &Edge_drop);
-        HashMap_put(self.edges, u, adj);
-    }
-    adj.push(Edge__new(u, v, weight));
-}
-
-fn Graph_out_degree(Graph* self, int u) {
-    ArrayList* adj = self.out_edges(u);
-    return adj.size();
-}
-
-fn Graph_out_edges(Graph* self, int u) {
-    return HashMap_get(self.edges, u);
-}
-
 struct Weight {
     int len,
     char* label, # not owned!
@@ -100,7 +48,7 @@ fn Weight__new(int len, char* label, int portal_dir) {
 }
 
 fn build_graph(Map* m) {
-    Graph* g = Graph__new();
+    Graph* g = Graph__new_owned_weights();
     ArrayList* list = m.portals;
     int i = list.size();
     while i > 0 {
@@ -209,8 +157,8 @@ fn State__new(int pos, int steps, int level) {
 }
 
 fn cross_edge_portals(State* s, Edge* e) {
-    Weight* w = e.weight;
-    return State__new(e.v, s.steps + w.len, 0);
+    Weight* w = e.weight();
+    return State__new(e.v(), s.steps + w.len, 0);
 }
 
 fn path_length_portals(Map* m, Graph* g) {
@@ -218,15 +166,15 @@ fn path_length_portals(Map* m, Graph* g) {
 }
 
 fn cross_edge_nesting(State* s, Edge* e) {
-    Weight* w = e.weight;
+    Weight* w = e.weight();
     if w.portal_dir == 0 {
-        return State__new(e.v, s.steps + w.len, s.level);
+        return State__new(e.v(), s.steps + w.len, s.level);
     }
     int level = s.level + w.portal_dir;
     if level < 0 {
         return null;
     }
-    return State__new(e.v, s.steps + w.len, level);
+    return State__new(e.v(), s.steps + w.len, level);
 }
 
 fn path_length_nesting(Map* m, Graph* g) {
@@ -269,7 +217,7 @@ fn path_length_internal(Map* m, Graph* g, void* cross_edge) {
 }
 
 fn graphviz(Map* m, Graph* g) {
-    puts("strict graph {");
+    puts("digraph {");
     printf("  graph [rank=source] { %d [shape=polygon style=filled fillcolor=%s] }\n", m.start, "lime");
     printf("  graph [rank=sink] { %d [shape=polygon style=filled fillcolor=%s] }\n", m.goal, "pink");
     puts("");
@@ -294,22 +242,18 @@ fn graphviz(Map* m, Graph* g) {
         while i > 0 {
             i = i - 1;
             Edge* e = edges.get(i);
-            q.push(e.v);
-            printf("  %d [label=r%dc%d]\n", e.v, e.v / m.width + 1, e.v % m.width + 1);
-            # only draw edges once
-            if !visited.contains(e.v) {
-                printf("  %d -- %d", u, e.v);
-                Weight* w = e.weight;
-                if w.portal_dir == 0 {
-                    printf(" [label=%d]\n", w.len);
-                } else {
-                    # it's be easier to draw portals from the map directly, but
-                    # do it from the graph, as that's where the data will be
-                    # read from during the walk.
-                    char* dir = "forward";
-                    if w.portal_dir < 0 { dir = "back"; }
-                    printf(" [label=%c%s : %d : %d%c penwidth=2 weight=0 color=red dir=%s]\n", '"', w.label, w.len, w.portal_dir, '"', dir);
-                }
+            int v = e.v();
+            q.push(v);
+            printf("  %d [label=r%dc%d]\n", v, v / m.width + 1, v % m.width + 1);
+            printf("  %d -> %d", u, v);
+            Weight* w = e.weight();
+            if w.portal_dir == 0 {
+                printf(" [label=%d]\n", w.len);
+            } else {
+                # it's be easier to draw portals from the map directly, but
+                # do it from the graph, as that's where the data will be
+                # read from during the walk.
+                printf(" [label=%c%s : %d : %d%c penwidth=2 color=red]\n", '"', w.label, w.len, w.portal_dir, '"');
             }
         }
     }
