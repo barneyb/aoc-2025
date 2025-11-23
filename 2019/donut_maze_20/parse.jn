@@ -6,6 +6,7 @@ struct Parse {
     int width,
     int start,
     int goal,
+    ArrayList* open_tiles,
     # Map<int, int>, where keys are encoded labels
     HashMap* ends,
     # Map<int, ArrayList<int>>, where keys are ids
@@ -18,6 +19,7 @@ fn Parse__new() {
     parse.width = -1;
     parse.start = -1;
     parse.goal = -1;
+    parse.open_tiles = ArrayList__new(10);
     parse.ends = HashMap__new(null, null);
     parse.adj = HashMap__new_owned(null, null, null, &ArrayList_drop);
     parse.portals = ArrayList__new_owned(10, &Portal_drop);
@@ -32,12 +34,6 @@ fn Parse_join(Parse* self, int u, int v) {
         adj.put(u, mns);
     }
     mns.push(v);
-    ArrayList* nns = adj.get(v);
-    if nns == null {
-        nns = ArrayList__new(4);
-        adj.put(v, nns);
-    }
-    nns.push(u);
 }
 
 fn Parse_portal(Parse* self, char a, char b, int u, bool is_inside) {
@@ -66,7 +62,7 @@ fn Parse_portal(Parse* self, char a, char b, int u, bool is_inside) {
 }
 
 fn Parse_into_map(Parse* self) {
-    Map* m = Map__new(self.width, self.start, self.goal, self.adj, self.portals);
+    Map* m = Map__new(self.width, self.start, self.goal, self.open_tiles, self.adj, self.portals);
     int open_portals = HashMap_size(self.ends);
     if open_portals != 0 {
         eprintf("Not all portals were closed; %d remain open\n", open_portals);
@@ -101,6 +97,7 @@ pub fn parse() {
             if tile == null { done; }
             int u = r * parse.width + c;
             if tile == '.' {
+                ArrayList_push(parse.open_tiles, u);
                 if m1[c] == '.' {
                     parse.join(u, u - parse.width);
                 }

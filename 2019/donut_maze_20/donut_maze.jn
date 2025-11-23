@@ -7,22 +7,25 @@ pub struct Map {
     int width,
     int start,
     int goal,
-    # Map<int, ArrayList<int>>
+    ArrayList* open_tiles,
+    # Map<int, ArrayList<int>> - only NORTH and WEST!
     HashMap* adjacent,
     ArrayList* portals,
 }
 
-pub fn Map__new(int width, int start, int goal, HashMap* adj, ArrayList* portals) {
+pub fn Map__new(int width, int start, int goal, ArrayList* open_tiles, HashMap* adj, ArrayList* portals) {
     Map* m = malloc(sizeof(Map));
     m.width = width;
     m.start = start;
     m.goal = goal;
+    m.open_tiles = open_tiles;
     m.adjacent = adj;
     m.portals = portals;
     return m;
 }
 
 fn Map_drop(Map* self) {
+    ArrayList_drop(self.open_tiles);
     HashMap_drop(self.adjacent);
     ArrayList_drop(self.portals);
     free(self);
@@ -98,38 +101,33 @@ fn Weight__new(int len, char* label, int portal_dir) {
 
 fn build_graph(Map* m) {
     Graph* g = Graph__new();
-    Queue* q = Queue__new();
-    q.push(m.start);
-    ArrayList* portals = m.portals;
-    int i = portals.size();
+    ArrayList* list = m.portals;
+    int i = list.size();
     while i > 0 {
         i = i - 1;
-        Portal* p = portals.get(i);
-        q.push(p.u());
-        q.push(p.v());
+        Portal* p = list.get(i);
+        # portals are bi-directional
         g.add_edge(p.u(), p.v(), Weight__new(1, p.label(), 1));
         g.add_edge(p.v(), p.u(), Weight__new(1, p.label(), -1));
     }
-    HashMap* visited = HashMap__new(null, null);
 
-    while q.size() > 0 {
-        int u = q.remove();
-        if visited.put(u, u) != null {
-            again;
-        }
+    list = m.open_tiles;
+    i = list.size();
+    while i > 0 {
+        i = i - 1;
+        int u = list.get(i);
         ArrayList* adj = HashMap_get(m.adjacent, u);
-        i = adj.size();
-        while i > 0 {
-            i = i - 1;
-            int v = adj.get(i);
-            q.push(v);
+        if adj == null { again; }
+        int j = adj.size();
+        while j > 0 {
+            j = j - 1;
+            int v = adj.get(j);
+            # parse only records NORTH and WEST adjacencies
             g.add_edge(u, v, Weight__new(1, null, 0));
             g.add_edge(v, u, Weight__new(1, null, 0));
         }
     }
 
-    visited.drop();
-    q.drop();
     return g;
 }
 
