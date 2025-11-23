@@ -8,6 +8,10 @@ if [ -z "$JOHANN_HOME" ]; then
 fi
 
 "$JOHANN_HOME/bin/jnc" --version
+
+# utils first
+make -C util clean all
+
 for dir in $(find . -name Makefile -depth 3 \
     | sed -Ee 's~^(\./([0-9]+)/.+_([0-9]+))/.*~\2 \3 \1~' \
     | sort -n \

@@ -1,4 +1,10 @@
 include ../make_vars.inc
+OBJECTS = \
+	$(LIB)/get_opts.o \
+	$(LIB)/Graph.o \
+	$(LIB)/graph_to_dot.o \
+
+all: $(OBJECTS)
 
 $(OUT)/get_opts.s: \
 		$(OUT)/allocator.jstd.jnh \
