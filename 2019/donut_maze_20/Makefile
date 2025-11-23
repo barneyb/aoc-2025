@@ -4,6 +4,7 @@ NAME = donut_maze
 include ../../make_vars.inc
 PROG = $(BIN)/$(NAME)
 OBJECTS = \
+	$(UTIL)/$(LIB)/get_opts.o \
 	$(UTIL)/$(LIB)/Graph.o \
 	$(LIB)/parse.o \
 	$(LIB)/Portal.o \
@@ -30,13 +31,13 @@ ex3: $(PROG) ex3.txt
 $(OUT)/donut_maze.s: \
 		$(OUT)/allocator.jstd.jnh \
 		$(OUT)/ArrayList.jstd.jnh \
+		$(UTIL)/$(OUT)/get_opts.jnh \
 		$(UTIL)/$(OUT)/Graph.jnh \
 		$(OUT)/HashMap.jstd.jnh \
 		$(OUT)/io.jstd.jnh \
 		$(OUT)/parse.jnh \
 		$(OUT)/Portal.jnh \
 		$(OUT)/Queue.jstd.jnh \
-		$(OUT)/string.jstd.jnh \
 		donut_maze.jn
 	${CATPILE}
 

@@ -14,9 +14,13 @@ clean: clean_internal
 clean_internal:
 
 # allow arbitrary handoff to utils
-.PHONY: $(UTIL)/%
-$(UTIL)/%:
+# not sure why both FORCE and .PHONY are needed, but it doesn't work otherwise
+$(UTIL)/%: FORCE
 	$(MAKE) -C $(UTIL) $*
+
+FORCE:
+
+.PHONY: FORCE
 
 # main build targets
 $(BIN)/%: $(LIB)/%.o $(JSTDLIB) $(OBJECTS)
