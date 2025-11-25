@@ -6,9 +6,35 @@
 pub struct ArrayList;
 pub struct Graph;
 
+struct Iter;
 struct Edge;
 struct HashMap;
+struct Keys;
 struct Queue;
+
+# I print the entire graph.
+pub fn Graph_dot(Graph* g,
+                 void* label_node,
+                 void* label_edge) {
+    puts("digraph {");
+    Keys* nodes = g.nodes();
+    while true {
+        void* u = nodes.next();
+        if u == null { done; }
+        dot_labeled_node(*u, label_node);
+        ArrayList* edges = g.out_edges(*u);
+        if edges == null { again; }
+        Iter* itr = ArrayList_iter(edges);
+        while true {
+            void* e = itr.next();
+            if e == null { done; }
+            dot_labeled_edge(*e, label_edge);
+        }
+        free(itr);
+    }
+    free(nodes);
+    puts("}");
+}
 
 # I print the given nodes of the given graph, along with all edges to other
 # nodes in the list. Edges to nodes not in the list will be omitted.
@@ -29,6 +55,7 @@ pub fn Graph_dot_nodes(Graph* g,
         int u = nodes.get(i);
         dot_labeled_node(u, label_node);
         ArrayList* edges = g.out_edges(u);
+        if edges == null { again; }
         int j = edges.size();
         while j > 0 {
             j = j - 1;
@@ -58,6 +85,7 @@ pub fn Graph_dot_reachable(Graph* g,
         if visited.put(u, u) != null { again; }
         dot_labeled_node(u, label_node);
         ArrayList* edges = g.out_edges(u);
+        if edges == null { again; }
         int i = edges.size();
         while i > 0 {
             i = i - 1;

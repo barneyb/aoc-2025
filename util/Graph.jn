@@ -67,6 +67,13 @@ pub fn Graph_drop(Graph* self) {
     free(self);
 }
 
+# I add a node to the graph, if it's not already known. If it is, I am a no-op.
+pub fn Graph_add_node(Graph* self, int u) {
+    if !HashMap_contains(self.edges, u) {
+        HashMap_put(self.edges, u, null);
+    }
+}
+
 # I add a new edge to the graph. Parallel edges are allowed. The graph will or
 # will not take ownership of the passed weight, based on how it was constructed.
 pub fn Graph_add_edge(Graph* self, int u, int v, void weight) {
@@ -85,7 +92,16 @@ pub fn Graph_out_degree(Graph* self, int u) {
     return adj.size();
 }
 
-# I return an `ArrayList` containing the out `Edge`s of node `u`.
+# I return an `ArrayList` containing the out `Edge`s of node `u`. If it has
+# zero out-edges, `null` will be returned (not an empty list).
 pub fn Graph_out_edges(Graph* self, int u) {
-    return HashMap_get(self.edges, u);
+    ArrayList* edges = HashMap_get(self.edges, u);
+    if edges == null { return null; }
+    if edges.size() == 0 { return null; }
+    return edges;
+}
+
+# I return a `Keys` (from `HashMap`) which iterates over the graph's node ids.
+pub fn Graph_nodes(Graph* self) {
+    return HashMap_keys(self.edges);
 }

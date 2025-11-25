@@ -21,6 +21,7 @@ $(OUT)/Graph.s: \
 	${CATPILE}
 
 $(OUT)/graph_to_dot.s: \
+		$(OUT)/allocator.jstd.jnh \
 		$(OUT)/ArrayList.jstd.jnh \
 		$(OUT)/HashMap.jstd.jnh \
 		$(OUT)/Queue.jstd.jnh \

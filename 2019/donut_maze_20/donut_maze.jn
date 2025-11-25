@@ -113,9 +113,10 @@ pub fn main(int argc, char** argv) {
 #        g.dot_nodes(&label_node,
 #                    &label_edge,
 #                    m.open_tiles);
-        g.dot_reachable(&label_node,
-                        &label_edge,
-                        m.start);
+#        g.dot_reachable(&label_node,
+#                        &label_edge,
+#                        m.start);
+        g.dot(&label_node, &label_edge);
     } else {
         printf("Shortest Path (Portals): %d steps\n", path_length_portals(m, g));
 
