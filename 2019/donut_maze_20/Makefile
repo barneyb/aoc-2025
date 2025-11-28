@@ -29,33 +29,21 @@ ex3: $(PROG) ex3.txt
 	$(PROG) < ex3.txt
 
 $(OUT)/donut_maze.s: \
-		$(OUT)/allocator.jstd.jnh \
-		$(OUT)/ArrayList.jstd.jnh \
 		$(UTIL)/$(OUT)/get_opts.jnh \
 		$(UTIL)/$(OUT)/Graph.jnh \
 		$(UTIL)/$(OUT)/graph_to_dot.jnh \
-		$(OUT)/HashMap.jstd.jnh \
-		$(OUT)/io.jstd.jnh \
 		$(OUT)/parse.jnh \
 		$(OUT)/Portal.jnh \
-		$(OUT)/Queue.jstd.jnh \
 		donut_maze.jn
 	${CATPILE}
 
 $(OUT)/parse.s: \
-		$(OUT)/allocator.jstd.jnh \
-		$(OUT)/ArrayList.jstd.jnh \
-		$(OUT)/HashMap.jstd.jnh \
-		$(OUT)/io.jstd.jnh \
 		$(OUT)/Portal.jnh \
-		$(OUT)/string.jstd.jnh \
-		$(OUT)/sys.jstd.jnh \
 		$(OUT)/donut_maze.jnh \
 		parse.jn
 	${CATPILE}
 
 $(OUT)/Portal.s: \
-		$(OUT)/allocator.jstd.jnh \
 		Portal.jn
 	${CATPILE}
 

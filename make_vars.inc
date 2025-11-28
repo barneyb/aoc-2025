@@ -6,11 +6,11 @@ UTIL ?= ../../util
 GRAPHVIZ_LAYOUT ?= dot
 JNC ?= $(JOHANN_HOME)/bin/jnc
 JSTDLIB ?= $(JOHANN_HOME)/lib/jstdlib.o
-JSTDLIB_SRC ?= $(JOHANN_HOME)/jstdlib
+JSTDLIB_H ?= $(JOHANN_HOME)/lib/jstdlib.jnh
 
 define CATPILE
 	@mkdir -p $(OUT)
-	cat $^ > $*.jni
+	cat $(JSTDLIB_H) $^ > $*.jni
 	$(JNC) --strict < $*.jni > $@
 endef
 

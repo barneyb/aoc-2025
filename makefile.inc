@@ -38,9 +38,6 @@ $(OUT)/%.s: %.jn $(JNC)
 $(OUT)/%.jnh: %.jn $(JNC)
 	${HEADPILE}
 
-$(OUT)/%.jstd.jnh: $(JSTDLIB_SRC)/%.jn $(JNC)
-	${HEADPILE}
-
 %: $(BIN)/%
 	$(BIN)/$@
 

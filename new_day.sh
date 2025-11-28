@@ -84,8 +84,6 @@ all: \$(PROG) input.txt
 	time \$(PROG) < input.txt
 
 \$(OUT)/${NAME}.s: \\
-		\$(OUT)/allocator.jstd.jnh \\
-		\$(OUT)/io.jstd.jnh \\
 		${NAME}.jn
 	\${CATPILE}
 
