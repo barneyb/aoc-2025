@@ -94,11 +94,14 @@ cat << EOF > "${NAME}.jn"
 pub fn main() {
     puts("Hello, ${NAME}!");
     int line_count = 0;
+    int char_count = 0;
     while !iseof() {
-        free(read_line());
+        char* l = read_line();
+        char_count = char_count + strlen(l) + 1; # the newline
+        free(l);
         line_count = line_count + 1;
     }
-    printf("There are %d lines of input waiting!\n", line_count);
+    printf("There are %d lines (%d chars) of input waiting!\n", line_count, char_count);
 }
 EOF
 
