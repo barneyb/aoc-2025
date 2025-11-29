@@ -41,8 +41,3 @@ pub fn main() {
     printf("Closest Crossing : %d\n", closest);
     printf("Earliest Crossing: %d\n", earliest);
 }
-
-fn abs(int i) { # todo: jstdlib
-    if i < 0 { return -i; }
-    return i;
-}
