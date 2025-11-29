@@ -1,9 +1,38 @@
 pub fn main() {
-    puts("Hello, crossed_wires!");
-    int line_count = 0;
-    while !iseof() {
-        free(read_line());
-        line_count = line_count + 1;
+    # first wire
+    HashMap* wire = HashMap__new_owned(&Pt_hash, &Pt_cmp, &Pt_drop, null);
+    Input* input = Input__new(read_line());
+    Instructions* inss = Instructions__new(input);
+    Points* ps = Points__new(inss);
+    while true {
+        Pt* p = ps.next();
+        if p == null { done; }
+        wire.put(p.clone(), 1);
     }
-    printf("There are %d lines of input waiting!\n", line_count);
+    ps.drop();
+
+    # second wire
+    input = Input__new(read_line());
+    inss = Instructions__new(input);
+    ps = Points__new(inss);
+    int best = 0x7fffffffffffffff; # max numer
+    while true {
+        p = ps.next();
+        if p == null { done; }
+        if wire.contains(p) {
+            int md = abs(p.x()) + abs(p.y());
+            if md < best {
+                best = md;
+            }
+        }
+    }
+    ps.drop();
+    wire.drop();
+
+    printf("Closest Crossing: %d\n", best);
+}
+
+fn abs(int i) { # todo: jstdlib
+    if i < 0 { return -i; }
+    return i;
 }

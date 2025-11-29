@@ -1,0 +1,48 @@
+pub struct Input;
+
+pub struct Ins {
+    char dir,
+    int len,
+}
+
+pub fn Ins_dir(Ins* self) { return self.dir; }
+pub fn Ins_len(Ins* self) { return self.len; }
+
+fn Ins__new(char dir, int len) {
+    Ins* ins = malloc(sizeof(Ins));
+    ins.dir = dir;
+    ins.len = len;
+    return ins;
+}
+
+pub struct Instructions {
+    Input* input,
+    Ins* curr,
+}
+
+pub fn Instructions__new(Input* input) {
+    Instructions* inss = malloc(sizeof(Instructions));
+    inss.input = input;
+    inss.curr = null;
+    return inss;
+}
+
+pub fn Instructions_drop(Instructions* self) {
+    if self == null { return; }
+    Input_drop(self.input);
+    free(self.curr);
+    free(self);
+}
+
+pub fn Instructions_next(Instructions* self) {
+    Input* input = self.input;
+    char* c = input.next();
+    if c == null { return null; }
+    if *c == ',' {
+        c = input.next();
+        if c == null { return null; }
+    }
+    free(self.curr);
+    self.curr = Ins__new(*c, input.next_int());
+    return self.curr;
+}
