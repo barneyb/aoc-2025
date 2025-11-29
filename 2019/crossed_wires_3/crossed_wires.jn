@@ -1,0 +1,48 @@
+pub fn main() {
+    # first wire
+    HashMap* wire = HashMap__new_owned(&Pt_hash, &Pt_cmp, &Pt_drop, null);
+    Input* input = Input__new(read_line());
+    Instructions* inss = Instructions__new(input);
+    Points* ps = Points__new(inss);
+    int steps = 0;
+    while true {
+        Pt* p = ps.next();
+        if p == null { done; }
+        steps = steps + 1;
+        wire.put(p.clone(), steps);
+    }
+    ps.drop();
+
+    # second wire
+    input = Input__new(read_line());
+    inss = Instructions__new(input);
+    ps = Points__new(inss);
+    steps = 0;
+    int closest = 0x7fffffffffffffff; # max integer
+    int earliest = closest;
+    while true {
+        p = ps.next();
+        if p == null { done; }
+        steps = steps + 1;
+        if wire.contains(p) {
+            int md = abs(p.x()) + abs(p.y());
+            if md < closest {
+                closest = md;
+            }
+            int total_steps = steps + wire.get(p);
+            if total_steps < earliest {
+                earliest = total_steps;
+            }
+        }
+    }
+    ps.drop();
+    wire.drop();
+
+    printf("Closest Crossing : %d\n", closest);
+    printf("Earliest Crossing: %d\n", earliest);
+}
+
+fn abs(int i) { # todo: jstdlib
+    if i < 0 { return -i; }
+    return i;
+}
