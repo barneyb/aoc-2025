@@ -1,57 +1,6 @@
 pub struct Instructions;
 pub struct Ins;
-
-pub struct Pt {
-    int x,
-    int y,
-}
-
-pub fn Pt_x(Pt* self) { return self.x; }
-pub fn Pt_y(Pt* self) { return self.y; }
-
-fn Pt__new(int x, int y) {
-    Pt* p = malloc(sizeof(Pt));
-    p.x = x;
-    p.y = y;
-    return p;
-}
-
-pub fn Pt_drop(Pt* self) {
-    free(self);
-}
-
-fn Pt_equals(Pt* self, Pt* other) {
-    return self.cmp(other) == 0;
-}
-
-pub fn Pt_hash(Pt* self) {
-    return self.x ^ self.y;
-}
-
-pub fn Pt_cmp(Pt* self, Pt* other) {
-    if other == null { return false; }
-    int c = self.x - other.x;
-    if c != 0 { return c; }
-    return self.y - other.y;
-}
-
-pub fn Pt_clone(Pt* self) {
-    return Pt__new(self.x, self.y);
-}
-
-fn Pt_into_delta(Pt* self, int dx, int dy) {
-    Pt* p = Pt__new(self.x + dx, self.y + dy);
-    self.drop();
-    return p;
-}
-
-fn Pt_dx(Pt* self, int dx) {
-    return Pt__new(self.x + dx, self.y);
-}
-
-fn Pt_dy(Pt* self, int dy) {
-    return Pt__new(self.x, self.y + dy);
-}
+struct Pt;
 
 pub struct Points {
     Instructions* inss,
