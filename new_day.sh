@@ -59,7 +59,7 @@ print(name)
 EOF
 )"
 
-DIR="${YEAR}/${NAME}_${DAY}"
+DIR=$(printf "%04d/%s_%02d" "$YEAR" "$NAME" "$DAY")
 echo
 echo "Creating '${NAME}.jn' in '$DIR'"
 echo
