@@ -18,7 +18,7 @@ pub fn main() {
     inss = Instructions__new(input);
     ps = Points__new(inss);
     steps = 0;
-    int closest = 0x7fffffffffffffff; # max integer
+    int closest = MAX_INTEGER;
     int earliest = closest;
     while true {
         p = ps.next();
