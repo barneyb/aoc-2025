@@ -43,8 +43,4 @@ $(OUT)/parse.s: \
 		parse.jn
 	${CATPILE}
 
-$(OUT)/Portal.s: \
-		Portal.jn
-	${CATPILE}
-
 include ../../makefile.inc

@@ -194,7 +194,7 @@ fn restitch(char* prefix, char* suffix, HashMap* result, ArrayList* repls) {
     int i = 0;
     int l = repls.size();
     while i < l {
-        StringBuilder* sb = StringBuilder__new();
+        StringBuilder* sb = StringBuilder__new(10);
         sb.push_str(prefix);
         sb.push_str(repls.get(i));
         sb.push_str(suffix);

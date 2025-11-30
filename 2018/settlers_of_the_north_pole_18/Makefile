@@ -20,8 +20,4 @@ $(OUT)/settlers_of_the_north_pole.s: \
 		settlers_of_the_north_pole.jn
 	${CATPILE}
 
-$(OUT)/Map.s: \
-		Map.jn
-	${CATPILE}
-
 include ../../makefile.inc

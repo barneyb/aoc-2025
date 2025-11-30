@@ -33,7 +33,8 @@ $(LIB)/%.o: $(OUT)/%.s
 
 $(OUT)/%.s: %.jn $(JNC)
 	@mkdir -p $(OUT)
-	$(JNC) < $< > $@
+	cat $(JSTDLIB_H) $< > $(@D)/$*.jni
+	$(JNC) --strict < $(@D)/$*.jni > $@
 
 $(OUT)/%.jnh: %.jn $(JNC)
 	${HEADPILE}
