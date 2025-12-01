@@ -8,6 +8,9 @@ OBJECTS = \
 all: $(PROG) input.txt
 	time $(PROG) < input.txt
 
+ex1: $(PROG) ex1.txt
+	$(PROG) < ex1.txt
+
 $(OUT)/secret_entrance.s: \
 		secret_entrance.jn
 	${CATPILE}
