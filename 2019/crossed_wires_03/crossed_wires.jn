@@ -9,7 +9,9 @@ pub fn main() {
         Pt* p = ps.next();
         if p == null { done; }
         steps = steps + 1;
-        wire.put(p.clone(), steps);
+        if !wire.contains(p) {
+            wire.put(p.clone(), steps);
+        }
     }
     ps.drop();
 
