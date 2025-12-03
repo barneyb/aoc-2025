@@ -118,12 +118,16 @@ pub fn main(int argc, char** argv) {
 #                        m.start);
         g.dot(&label_node, &label_edge);
     } else {
-        printf("Shortest Path (Portals): %d steps\n", path_length_portals(m, g));
+        int part_one = path_length_portals(m, g);
+        printf("Shortest Path (Portals): %d steps\n", part_one);
+        printf("[__AOCD_VERIFY_A__[%d]]\n", part_one);
 
         if opts.contains("no-part-two") {
             puts("Skipping part two.");
         } else {
-            printf("Shortest Path (Nesting): %d steps\n", path_length_nesting(m, g));
+            int part_two = path_length_nesting(m, g);
+            printf("Shortest Path (Nesting): %d steps\n", part_two);
+            printf("[__AOCD_VERIFY_B__[%d]]\n", part_two);
         }
     }
 

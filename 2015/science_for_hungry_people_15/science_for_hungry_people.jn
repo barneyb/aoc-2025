@@ -17,7 +17,9 @@ pub fn main() {
 
     Bests* bests = find_bests(ings);
     printf("Best Score            : %d\n", bests.overall);
+    printf("[__AOCD_VERIFY_A__[%d]]\n", bests.overall);
     printf("Best 500 Calorie Score: %d\n", bests.cal_500);
+    printf("[__AOCD_VERIFY_B__[%d]]\n", bests.cal_500);
     free(bests);
 
     int i = 0;

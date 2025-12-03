@@ -1,6 +1,9 @@
 YEAR=2015
 DAY=1
-include ../../makefile.inc
+include ../../make_vars.inc
+PROG = $(BIN)/not_quite_lisp
 
-all: $(BIN)/not_quite_lisp input.txt
-	time $(BIN)/not_quite_lisp < input.txt
+all: $(PROG) input.txt
+	time $(PROG) < input.txt
+
+include ../../makefile.inc

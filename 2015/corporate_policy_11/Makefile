@@ -1,6 +1,9 @@
 YEAR=2015
 DAY=11
-include ../../makefile.inc
+include ../../make_vars.inc
+PROG = $(BIN)/corporate_policy
 
-all: $(BIN)/corporate_policy input.txt
-	time $(BIN)/corporate_policy < input.txt
+all: $(PROG) input.txt
+	time $(PROG) < input.txt
+
+include ../../makefile.inc

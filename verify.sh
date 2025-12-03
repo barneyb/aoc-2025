@@ -5,6 +5,7 @@ YEAR="$1"
 DAY="$2"
 
 while IFS= read -r line; do
+    echo "$line"
     if echo "$line" | grep -qF '[__AOCD_VERIFY_A__['; then
         ANSWER=$(echo "$line" | grep -F '[__AOCD_VERIFY_A__[' | cut -c 20- | rev | cut -c 3- | rev)
         echo -n "Verify part one... "
@@ -13,7 +14,5 @@ while IFS= read -r line; do
         ANSWER=$(echo "$line" | grep -F '[__AOCD_VERIFY_B__[' | cut -c 20- | rev | cut -c 3- | rev)
         echo -n "Verify part two... "
         python ../../aocd_submit_wrapper.py "$YEAR" "$DAY" b "$ANSWER"
-    else
-        echo "$line"
     fi
 done

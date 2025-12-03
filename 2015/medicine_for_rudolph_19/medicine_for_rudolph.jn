@@ -68,10 +68,14 @@ pub fn main() {
     }
     line = read_line();
 #    printf("calib mol: %s\n", line);
-    printf("Calibration Result: %d\n", calibrate(replacements, line));
+    int part_one = calibrate(replacements, line);
+    printf("Calibration Result: %d\n", part_one);
+    printf("[__AOCD_VERIFY_A__[%d]]\n", part_one);
     Machine* m = Machine__new(repls);
-    printf("Fabrication Steps : %d\n", Machine_fabricate(m, line));
+    int part_two = Machine_fabricate(m, line);
+    printf("Fabrication Steps : %d\n", part_two);
     printf("  (%d dead ends)\n", m.dead_ends);
+    printf("[__AOCD_VERIFY_B__[%d]]\n", part_two);
     m.drop();
     free(line);
     replacements.drop();

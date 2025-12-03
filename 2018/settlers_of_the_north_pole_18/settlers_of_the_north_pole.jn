@@ -21,6 +21,7 @@ pub fn main() {
     }
     map.print();
     printf("Resource value after %d minutes: %d\n", map.ticks(), map.resource_value());
+    printf("[__AOCD_VERIFY_A__[%d]]\n", map.resource_value());
 
     # it started looking cyclic around 500, so get well beyond there
     while map.ticks() < 1000 {
@@ -40,6 +41,7 @@ pub fn main() {
         advance = advance - 1;
     }
     printf("Projected value after %d minutes: %d\n", target_minutes, map.resource_value());
+    printf("[__AOCD_VERIFY_B__[%d]]\n", map.resource_value());
 
     free_adjacent(adj);
     map.drop();

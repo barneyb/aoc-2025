@@ -49,5 +49,10 @@ pub fn main(int argc, char** argv) {
         if len % 2 == 1 { done; }
     }
     printf("  checksum: '%s'\n", data);
+    if disk_size == 272 {
+        printf("[__AOCD_VERIFY_A__[%s]]\n", data);
+    } else if disk_size == 35651584 {
+        printf("[__AOCD_VERIFY_B__[%s]]\n", data);
+    }
     free(data);
 }
