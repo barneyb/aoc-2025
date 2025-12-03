@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -e
 
 if [ -z "$JOHANN_HOME" ]; then
@@ -16,11 +15,11 @@ for dir in util $(find . -name Makefile -depth 3 \
     | cut -d ' ' -f 3); do
     echo
     echo "$dir"
-    pushd "$dir" >  /dev/null
+    pushd "$dir" > /dev/null
     if [ "$1" = "--clean" ]; then
         make clean
     else
-        make clean all
+        make clean verify
     fi
     popd > /dev/null
     echo

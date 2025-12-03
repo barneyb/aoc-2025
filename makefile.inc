@@ -4,6 +4,9 @@
 # blindly assume that whatever includes this defines 'all' as its entrypoint
 __default__: all
 
+verify: $(PROG) input.txt
+	$(PROG) < input.txt | ../../verify.sh $(YEAR) $(DAY)
+
 input.txt: ~/.config/aocd/token
 	aocd $(YEAR) $(DAY) > /tmp/input.txt && mv /tmp/input.txt input.txt
 
