@@ -21,7 +21,7 @@ pub fn main() {
         if !read_if_present(',') { done; }
     }
     printf("Sum of Invalid IDs: %d\n", sum);
-    printf("[__AOCD_VERIFY_A__[%d]]\n", sum);
+    aocd_verify_a("%d", sum);
 }
 
 fn read_lo() {
