@@ -1,12 +1,73 @@
 pub fn main() {
-    puts("Hello, gift_shop!");
-    int line_count = 0;
-    int char_count = 0;
-    while !iseof() {
-        char* l = read_line();
-        char_count = char_count + strlen(l) + 1; # the newline
-        free(l);
-        line_count = line_count + 1;
+    int sum = 0;
+    while true {
+        int lo = read_lo();
+        read_expected('-');
+        int hi = read_hi();
+        if lo <= hi {
+            # this is a little silly...
+            char* s = itoa(lo);
+            int mag = pow(10, strlen(s));
+            int inc = mag + 1;
+            lo = lo * mag + lo;
+            hi = hi * mag + hi;
+            free(s);
+            while lo <= hi {
+                printf("  invalid: %d\n", lo);
+                sum = sum + lo;
+                lo = lo + inc;
+            }
+        }
+        if !read_if_present(',') { done; }
     }
-    printf("There are %d lines (%d chars) of input waiting!\n", line_count, char_count);
+    printf("Sum of Invalid IDs: %d\n", sum);
+    printf("[__AOCD_VERIFY_A__[%d]]\n", sum);
+}
+
+fn read_lo() {
+    char* s = read_digits();
+    printf("lo: '%s' -> ", s);
+    int len = strlen(s);
+    int mid = len / 2;
+    int second = atoi(s + mid);
+    s[mid] = null;
+    int first;
+    if mid << 1 == len {
+        # even number of digits
+        first = atoi(s);
+        if first < second {
+            first = first + 1;
+        }
+    } else { # odd
+        first = pow(10, mid);
+    }
+    free(s);
+    int lo = first * pow(10, len - mid) + first;
+    printf("%d & %d -> %d\n", first, second, lo);
+    return first;
+}
+fn read_hi() {
+    char* s = read_digits();
+    printf("hi: '%s' -> ", s);
+    int len = strlen(s);
+    int mid = len / 2;
+    int first;
+    int second;
+    if mid << 1 == len {
+        # even number of digits
+        second = atoi(s + mid);
+        s[mid] = null;
+        first = atoi(s);
+        if first > second {
+            first = first - 1;
+        }
+    } else { # odd
+        first = pow(10, mid) - 1;
+        mid = mid + 1;
+        second = atoi(s + mid);
+    }
+    free(s);
+    int hi = first * pow(10, len - mid) + first;;
+    printf("%d & %d -> %d\n", first, second, hi);
+    return first;
 }
