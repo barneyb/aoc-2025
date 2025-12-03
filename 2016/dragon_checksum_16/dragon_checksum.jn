@@ -50,9 +50,9 @@ pub fn main(int argc, char** argv) {
     }
     printf("  checksum: '%s'\n", data);
     if disk_size == 272 {
-        printf("[__AOCD_VERIFY_A__[%s]]\n", data);
+        aocd_verify_a("%s", data);
     } else if disk_size == 35651584 {
-        printf("[__AOCD_VERIFY_B__[%s]]\n", data);
+        aocd_verify_b("%s", data);
     }
     free(data);
 }

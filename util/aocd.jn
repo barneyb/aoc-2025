@@ -1,0 +1,21 @@
+struct StringBuilder;
+
+pub fn aocd_verify_a(char* conv, void answer) {
+    aocd_verify('A', conv, answer);
+}
+
+pub fn aocd_verify_b(char* conv, void answer) {
+    aocd_verify('B', conv, answer);
+}
+
+fn aocd_verify(char part, char* conv, void answer) {
+    StringBuilder* sb = StringBuilder__new(30);
+    sb.push_str("[__AOCD_VERIFY_");
+    sb.push(part);
+    sb.push_str("__[");
+    sb.push_str(conv);
+    sb.push_str("]]\n");
+    char* fmt = sb.into_chars();
+    printf(fmt, answer);
+    free(fmt);
+}

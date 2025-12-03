@@ -41,7 +41,7 @@ pub fn main() {
     wire.drop();
 
     printf("Closest Crossing : %d\n", closest);
-    printf("[__AOCD_VERIFY_A__[%d]]\n", closest);
+    aocd_verify_a("%d", closest);
     printf("Earliest Crossing: %d\n", earliest);
-    printf("[__AOCD_VERIFY_B__[%d]]\n", earliest);
+    aocd_verify_b("%d", earliest);
 }

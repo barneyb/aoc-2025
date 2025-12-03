@@ -4,6 +4,7 @@ NAME = crossed_wires
 include ../../make_vars.inc
 PROG = $(BIN)/$(NAME)
 OBJECTS = \
+	$(UTIL)/$(LIB)/aocd.o \
 	$(UTIL)/$(LIB)/Pt.o \
 	$(LIB)/Input.o \
 	$(LIB)/Instructions.o \
@@ -22,6 +23,7 @@ ex3: $(PROG) ex3.txt
 	$(PROG) < ex3.txt
 
 $(OUT)/crossed_wires.s: \
+		$(UTIL)/$(OUT)/aocd.jnh \
 		$(UTIL)/$(OUT)/Pt.jnh \
 		$(OUT)/Input.jnh \
 		$(OUT)/Instructions.jnh \

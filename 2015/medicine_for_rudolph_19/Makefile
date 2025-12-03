@@ -1,7 +1,10 @@
 YEAR=2015
 DAY=19
+NAME = medicine_for_rudolph
 include ../../make_vars.inc
-PROG = $(BIN)/medicine_for_rudolph
+PROG = $(BIN)/$(NAME)
+OBJECTS = \
+	$(UTIL)/$(LIB)/aocd.o \
 
 all: $(PROG) input.txt
 	time $(PROG) < input.txt
@@ -11,5 +14,10 @@ ex1: $(PROG)
 
 ex2: $(PROG)
 	$(PROG) < example_2.txt
+
+$(OUT)/$(NAME).s: \
+		$(UTIL)/$(OUT)/aocd.jnh \
+		$(NAME).jn
+	${CATPILE}
 
 include ../../makefile.inc

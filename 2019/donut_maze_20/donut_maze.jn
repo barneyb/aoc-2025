@@ -120,14 +120,14 @@ pub fn main(int argc, char** argv) {
     } else {
         int part_one = path_length_portals(m, g);
         printf("Shortest Path (Portals): %d steps\n", part_one);
-        printf("[__AOCD_VERIFY_A__[%d]]\n", part_one);
+        aocd_verify_a("%d", part_one);
 
         if opts.contains("no-part-two") {
             puts("Skipping part two.");
         } else {
             int part_two = path_length_nesting(m, g);
             printf("Shortest Path (Nesting): %d steps\n", part_two);
-            printf("[__AOCD_VERIFY_B__[%d]]\n", part_two);
+            aocd_verify_b("%d", part_two);
         }
     }
 

@@ -6,10 +6,10 @@ pub fn main() {
     printf("Initial Password: '%s'\n", pw);
     findNext(pw);
     printf("Next Password   : '%s'\n", pw);
-    printf("[__AOCD_VERIFY_A__[%s]]\n", pw);
+    aocd_verify_a("%s", pw);
     findNext(pw);
     printf("Third Password  : '%s'\n", pw);
-    printf("[__AOCD_VERIFY_B__[%s]]\n", pw);
+    aocd_verify_b("%s", pw);
     free(pw);
 }
 

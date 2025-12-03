@@ -1,8 +1,10 @@
 YEAR = 2016
 DAY = 16
+NAME = dragon_checksum
 include ../../make_vars.inc
-PROG = $(BIN)/dragon_checksum
+PROG = $(BIN)/$(NAME)
 OBJECTS = \
+	$(UTIL)/$(LIB)/aocd.o \
 
 all: $(PROG) input.txt
 	time $(PROG) 272 < input.txt
@@ -14,6 +16,11 @@ ex1: $(PROG)
 	$(PROG) 6 11111
 	$(PROG) 13 111100001010
 	$(PROG) 20 10000
+
+$(OUT)/$(NAME).s: \
+		$(UTIL)/$(OUT)/aocd.jnh \
+		$(NAME).jn
+	${CATPILE}
 
 include ../../makefile.inc
 

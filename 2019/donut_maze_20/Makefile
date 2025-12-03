@@ -4,6 +4,7 @@ NAME = donut_maze
 include ../../make_vars.inc
 PROG = $(BIN)/$(NAME)
 OBJECTS = \
+	$(UTIL)/$(LIB)/aocd.o \
 	$(UTIL)/$(LIB)/get_opts.o \
 	$(UTIL)/$(LIB)/Graph.o \
 	$(UTIL)/$(LIB)/graph_to_dot.o \
@@ -29,6 +30,7 @@ ex3: $(PROG) ex3.txt
 	$(PROG) < ex3.txt
 
 $(OUT)/donut_maze.s: \
+		$(UTIL)/$(OUT)/aocd.jnh \
 		$(UTIL)/$(OUT)/get_opts.jnh \
 		$(UTIL)/$(OUT)/Graph.jnh \
 		$(UTIL)/$(OUT)/graph_to_dot.jnh \
