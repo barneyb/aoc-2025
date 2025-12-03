@@ -1,13 +1,20 @@
 YEAR = 2017
 DAY = 17
+NAME = spinlock
 include ../../make_vars.inc
-PROG = $(BIN)/spinlock
+PROG = $(BIN)/$(NAME)
 OBJECTS = \
+	$(UTIL)/$(LIB)/aocd.o \
 
 all: $(PROG) input.txt
 	time $(PROG) < input.txt
 
 ex1: $(PROG)
 	echo 3 | $(PROG)
+
+$(OUT)/$(NAME).s: \
+		$(UTIL)/$(OUT)/aocd.jnh \
+		$(NAME).jn
+	${CATPILE}
 
 include ../../makefile.inc

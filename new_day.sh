@@ -79,11 +79,13 @@ NAME = ${NAME}
 include ../../make_vars.inc
 PROG = \$(BIN)/\$(NAME)
 OBJECTS = \\
+	\$(UTIL)/\$(LIB)/aocd.o \\
 
 all: \$(PROG) input.txt
 	time \$(PROG) < input.txt
 
 \$(OUT)/${NAME}.s: \\
+		\$(UTIL)/\$(OUT)/aocd.jnh \\
 		${NAME}.jn
 	\${CATPILE}
 
@@ -102,6 +104,7 @@ pub fn main() {
         line_count = line_count + 1;
     }
     printf("There are %d lines (%d chars) of input waiting!\n", line_count, char_count);
+#    aocd_verify_a("%d", );
 }
 EOF
 

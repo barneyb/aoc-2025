@@ -7,9 +7,10 @@ if [ -z "$JOHANN_HOME" ]; then
 fi
 
 "$JOHANN_HOME/bin/jnc" --version
+UTIL=./util
 
 # utils first
-for dir in util $(find . -name Makefile -depth 3 \
+for dir in "$UTIL" $(find . -name Makefile -depth 3 \
     | sed -Ee 's~^(\./([0-9]+)/.+_([0-9]+))/.*~\2 \3 \1~' \
     | sort -n \
     | cut -d ' ' -f 3); do
@@ -19,7 +20,11 @@ for dir in util $(find . -name Makefile -depth 3 \
     if [ "$1" = "--clean" ]; then
         make clean
     else
-        make clean verify
+        tgt=verify
+        if [ "$dir" = "$UTIL" ]; then
+            tgt=all
+        fi
+        make clean $tgt
     fi
     popd > /dev/null
     echo

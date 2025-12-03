@@ -18,7 +18,7 @@ pub fn main() {
         }
     }
     printf("Final floor  : %d\n", floor);
-    printf("[__AOCD_VERIFY_A__[%d]]\n", floor);
+    aocd_verify_a("%d", floor);
     printf("First descent: %d\n", firstDescent);
-    printf("[__AOCD_VERIFY_B__[%d]]\n", firstDescent);
+    aocd_verify_b("%d", firstDescent);
 }

@@ -12,9 +12,3 @@ $(OUT)/graph_to_dot.s: \
 	${CATPILE}
 
 include ../makefile.inc
-
-verify: all
-	@#
-
-input.txt:
-	@#
