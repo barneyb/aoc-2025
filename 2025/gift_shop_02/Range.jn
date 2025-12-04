@@ -1,0 +1,28 @@
+pub struct Range {
+    char* lo,
+    char* hi,
+    int ilo,
+    int ihi,
+}
+
+pub fn Range_lo(Range* self) { return self.lo; }
+pub fn Range_hi(Range* self) { return self.hi; }
+
+pub fn Range__new(char* lo, char* hi) {
+    Range* r = malloc(sizeof(Range));
+    r.lo = lo;
+    r.hi = hi;
+    r.ilo = atoi(lo);
+    r.ihi = atoi(hi);
+    return r;
+}
+
+pub fn Range_drop(Range* self) {
+    free(self.lo);
+    free(self.hi);
+    free(self);
+}
+
+pub fn Range_contains(Range* self, int i) {
+    return i >= self.ilo && i <= self.ihi;
+}

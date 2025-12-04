@@ -1,73 +1,77 @@
 pub fn main() {
+    ArrayList* ranges = parse();
+    Iter* itr = ranges.iter();
     int sum = 0;
     while true {
-        int lo = read_lo();
-        read_expected('-');
-        int hi = read_hi();
-        if lo <= hi {
-            # this is a little silly...
-            char* s = itoa(lo);
-            int mag = pow(10, strlen(s));
-            int inc = mag + 1;
-            lo = lo * mag + lo;
-            hi = hi * mag + hi;
-            free(s);
-            while lo <= hi {
-                printf("  invalid: %d\n", lo);
-                sum = sum + lo;
-                lo = lo + inc;
-            }
-        }
-        if !read_if_present(',') { done; }
+        Range** rp = itr.next();
+        if rp == null { done; }
+        sum = sum + sum_of_invalid_ids(*rp);
     }
-    printf("Sum of Invalid IDs: %d\n", sum);
     aocd_verify_a("%d", sum);
+    free(itr);
+    ranges.drop();
 }
 
-fn read_lo() {
-    char* s = read_digits();
-    printf("lo: '%s' -> ", s);
-    int len = strlen(s);
-    int mid = len / 2;
-    int second = atoi(s + mid);
-    s[mid] = null;
-    int first;
-    if mid << 1 == len {
-        # even number of digits
-        first = atoi(s);
-        if first < second {
-            first = first + 1;
-        }
-    } else { # odd
-        first = pow(10, mid);
+fn parse() {
+    ArrayList* ranges = ArrayList__new_owned(4, &Range_drop);
+    while true {
+        char* lo = read_digits();
+        read_expected('-');
+        char* hi = read_digits();
+        ranges.push(Range__new(lo, hi));
+        if !read_if_present(',') { done; }
     }
-    free(s);
-    int lo = first * pow(10, len - mid) + first;
-    printf("%d & %d -> %d\n", first, second, lo);
-    return first;
+    return ranges;
 }
-fn read_hi() {
-    char* s = read_digits();
-    printf("hi: '%s' -> ", s);
-    int len = strlen(s);
-    int mid = len / 2;
-    int first;
-    int second;
-    if mid << 1 == len {
-        # even number of digits
-        second = atoi(s + mid);
-        s[mid] = null;
-        first = atoi(s);
-        if first > second {
-            first = first - 1;
+
+fn sum_of_invalid_ids(Range* r) {
+    int sum = 0;
+    int plen = strlen(r.hi()) / 2;
+    int plo = aintoi(without_last(r.lo(), plen));
+    int phi = aintoi(without_last(r.hi(), plen));
+#    printf("from %s-%s, take prefixes %d-%d, from mag %d\n", r.lo(), r.hi(), plo, phi, mag(plo));
+    bool started = false;
+    while plo <= phi {
+        int n = plo * mag(plo) + plo;
+#        printf("  w/ %d, is %d in range? %b\n", plo, n, r.contains(n));
+        if r.contains(n) {
+            sum = sum + n;
+            started = true;
+        } else if started {
+            done;
         }
-    } else { # odd
-        first = pow(10, mid) - 1;
-        mid = mid + 1;
-        second = atoi(s + mid);
+        plo = plo + 1;
     }
+    return sum;
+}
+
+fn without_last(char* str, int suf_len) {
+    int l = strlen(str) - suf_len;
+    char* prefix = calloc(l + 1, 1);
+    memcpy(prefix, str, l);
+    return prefix;
+}
+
+fn aintoi(char* s) {
+    int i = atoi(s);
     free(s);
-    int hi = first * pow(10, len - mid) + first;;
-    printf("%d & %d -> %d\n", first, second, hi);
-    return first;
+    return i;
+}
+
+fn mag(int i) {
+    if i < 10 { return 10; }
+    if i < 100 { return 100; }
+    if i < 1000 { return 1000; }
+    if i < 10000 { return 10000; }
+    if i < 100000 { return 100000; }
+    if i < 1000000 { return 1000000; }
+    if i < 10000000 { return 10000000; }
+    if i < 100000000 { return 100000000; }
+    if i < 1000000000 { return 1000000000; }
+    if i < 10000000000 { return 10000000000; }
+    if i < 100000000000 { return 100000000000; }
+    if i < 1000000000000 { return 1000000000000; }
+    if i < 10000000000000 { return 10000000000000; }
+    eprintf("huge-ass number %d has unknown magnitude\n", i);
+    exit(1);
 }
