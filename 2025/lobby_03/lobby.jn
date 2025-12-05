@@ -1,24 +1,24 @@
 pub fn main() {
-    puts("Hello, lobby!");
-    int sum = 0;
+    int part_a = 0;
+    int part_b = 0;
     while !iseof() {
         char* l = read_line();
-        int j = max_joltage(l);
-        printf("bank '%s' produces %d\n", l, j);
+        int j = max_joltage(l, 2);
+        part_a = part_a + j;
+        j = max_joltage(l, 12);
+        part_b = part_b + j;
         free(l);
-        sum = sum + j;
     }
-    aocd_verify_a("%d", sum);
+    aocd_verify_a("%d", part_a);
+    aocd_verify_b("%d", part_b);
 }
 
-fn max_joltage(char* bank) {
+fn max_joltage(char* bank, int n) {
+    if n == 0 { return 0; }
     int len = strlen(bank);
-    int a = idx_of_largest_char(bank, len - 1);
-    int start = a + 1;
-    int b = start + idx_of_largest_char(bank + start, len - start);
-    int max = (bank[a] - '0') * 10 + (bank[b] - '0');
-    printf("  at %d: %c, then at %d: %c => %d\n", a, bank[a], b, bank[b], max);
-    return max;
+    int remaining = n - 1;
+    int a = idx_of_largest_char(bank, len - remaining);
+    return (bank[a] - '0') * pow(10, remaining) + max_joltage(bank + a + 1, remaining);
 }
 
 fn idx_of_largest_char(char* str, int len) {
