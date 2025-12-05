@@ -1,0 +1,58 @@
+struct Keys;
+
+pub struct Range {
+    char* lo,
+    char* hi,
+    int ilo,
+    int ihi,
+    HashMap* invalid_ids,
+}
+
+pub fn Range_lo(Range* self) { return self.lo; }
+pub fn Range_hi(Range* self) { return self.hi; }
+
+pub fn Range__new(char* lo, char* hi) {
+    Range* r = malloc(sizeof(Range));
+    r.lo = lo;
+    r.hi = hi;
+    r.ilo = atoi(lo);
+    r.ihi = atoi(hi);
+    r.invalid_ids = HashMap__new(null, null);
+    return r;
+}
+
+pub fn Range_drop(Range* self) {
+    free(self.lo);
+    free(self.hi);
+    HashMap_drop(self.invalid_ids);
+    free(self);
+}
+
+pub fn Range_is_too_large(Range* self, int i) {
+    return i > self.ihi;
+}
+
+pub fn Range_contains(Range* self, int i) {
+    return i >= self.ilo && i <= self.ihi;
+}
+
+pub fn Range_mark_invalid(Range* self, int id) {
+    return self.contains(id)
+        && HashMap_put(self.invalid_ids, id, id) == null;
+}
+
+pub fn Range_invalid_count(Range* self) {
+    return HashMap_size(self.invalid_ids);
+}
+
+pub fn Range_invalid_sum(Range* self) {
+    int sum = 0;
+    Keys* itr = HashMap_keys(self.invalid_ids);
+    int* id_ptr = itr.next();
+    while id_ptr != null {
+        sum = sum + *id_ptr;
+        id_ptr = itr.next();
+    }
+    free(itr);
+    return sum;
+}

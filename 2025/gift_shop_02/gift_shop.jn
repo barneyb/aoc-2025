@@ -1,0 +1,184 @@
+pub fn main() {
+    ArrayList* ranges = parse();
+    Iter* itr = ranges.iter();
+    int part_a = 0;
+    int part_b = 0;
+    while true {
+        Range** rp = itr.next();
+        if rp == null { done; }
+        # This only works because part A doesn't mark IDs invalid on the Range.
+        # Extremely silly, but didn't want to try and plumb them together. Yet?
+        part_a = part_a + sum_of_invalid_ids_a(*rp);
+        part_b = part_b + sum_of_invalid_ids_b(*rp);
+    }
+    aocd_verify_a("%d", part_a);
+    aocd_verify_b("%d", part_b);
+    free(itr);
+    ranges.drop();
+}
+
+fn sum_of_invalid_ids_a(Range* r) {
+    int sum = 0;
+    int plen = strlen(r.hi()) / 2;
+    int plo = aintoi(without_last(r.lo(), plen));
+    int phi = aintoi(without_last(r.hi(), plen));
+    bool started = false;
+    while plo <= phi {
+        int n = plo * mag(plo) + plo;
+        if r.contains(n) {
+            sum = sum + n;
+            started = true;
+        } else if started {
+            done;
+        }
+        plo = plo + 1;
+    }
+    return sum;
+}
+
+fn without_last(char* str, int suf_len) {
+    return substr(str, 0, strlen(str) - suf_len);
+}
+
+fn mag(int i) {
+    if i < 0 {
+        eprintf("non-natural number %d makes no sense\n", i);
+        exit(1);
+    }
+    if i < 10 { return 10; }
+    if i < 100 { return 100; }
+    if i < 1000 { return 1000; }
+    if i < 10000 { return 10000; }
+    if i < 100000 { return 100000; }
+    eprintf("huge-ass number %d has unknown magnitude\n", i);
+    exit(1);
+}
+
+fn sum_of_invalid_ids_b(Range* range) {
+    printf("%s-%s\n", range.lo(), range.hi());
+    int len_lo = strlen(range.lo());
+    int len_hi = strlen(range.hi());
+    ArrayList* fs;
+    int f;
+    if len_lo == len_hi {
+        # use of lo is arbitrary
+        fs = factors_no_larger_than(len_lo, len_lo / 2);
+        while fs.size() > 0 {
+            f = fs.pop();
+            search(range,
+                   substr(range.lo(), 0, f),
+                   substr(range.hi(), 0, f),
+                   len_lo / f);
+        }
+        fs.drop();
+    } else {
+        fs = factors_no_larger_than(len_lo, len_lo / 2);
+        while fs.size() > 0 {
+            f = fs.pop();
+            search(range,
+                   substr(range.lo(), 0, f),
+                   itoa(pow(10, f) - 1),
+                   len_lo / f);
+        }
+        fs.drop();
+        fs = factors_no_larger_than(len_hi, len_hi / 2);
+        while fs.size() > 0 {
+            f = fs.pop();
+            search(range,
+                   itoa(pow(10, f - 1)),
+                   substr(range.hi(), 0, f),
+                   len_hi / f);
+        }
+        fs.drop();
+    }
+    printf("  Found %d invalid ids summing to %d\n", range.invalid_count(), range.invalid_sum());
+    return range.invalid_sum();
+}
+
+# I consume both prefixes!
+fn search(Range* range, char* plo, char* phi, int rep) {
+    int ihi = atoi(phi);
+    free(phi);
+    int i = atoi(plo);
+    free(plo);
+# uncomment to cripple for part A
+#    if rep != 2 { return; }
+    while i <= ihi {
+        char* s = itoa(i);
+        int n = aintoi(repeat(s, rep));
+        free(s);
+        if range.is_too_large(n) { done; }
+        range.mark_invalid(n);
+        i = i + 1;
+    }
+}
+
+# I return a new NTBS consisting of `n` repeats of `str`.
+fn repeat(char* str, int n) { # todo: utils? jstdlib?
+    if n < 0 { return null; }
+    if n == 1 { return strclone(str); }
+    int len = strlen(str);
+    char* result = malloc(len * n + 1);
+    char* curr = result;
+    int i = 0;
+    while i < n {
+        memcpy(curr, str, len);
+        curr = curr + len;
+        i = i + 1;
+    }
+    *curr = null;
+    return result;
+}
+
+# I return a new `ArrayList` containing all factors of `n`, including 1 and
+# `n` itself, in arbitrary order. If `n` is not a natural number (1, 2, 3, ...)
+# results are undefined.
+fn factors(int n) { # todo: utils? jstdlib?
+    ArrayList* fs = ArrayList__new(5);
+    fs.push(1);
+    if n == 1 { return fs; }
+    fs.push(n);
+    int i = 2;
+    int j = n;
+    while i < j {
+        j = n / i;
+        if j * i == n {
+            fs.push(i);
+            if i != j {
+                fs.push(j);
+            }
+        }
+        i = i + 1;
+    }
+    return fs;
+}
+
+fn intcmp(int a, int b) { return a - b; }
+
+# I return a new `ArrayList` containing all factors of `n` no larger than `max`,
+# in ascending order. Both 1 and `n` may be included, if they're not too large.
+fn factors_no_larger_than(int n, int max) {
+    ArrayList* fs = factors(n);
+    fs.sort(&intcmp);
+    while fs.size() > 0 && fs.peek() > max { fs.pop(); }
+    return fs;
+}
+
+fn parse() {
+    ArrayList* ranges = ArrayList__new_owned(4, &Range_drop);
+    while true {
+        char* lo = read_digits();
+        read_expected('-');
+        char* hi = read_digits();
+        ranges.push(Range__new(lo, hi));
+        if !read_if_present(',') { done; }
+    }
+    return ranges;
+}
+
+# I _consume_ `str` while parsing it into a base-10 integer as if by `atoi`.
+fn aintoi(char* str) { # todo:utils?
+    int i = atoi(str);
+    free(str);
+    return i;
+}

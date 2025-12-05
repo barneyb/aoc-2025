@@ -5,7 +5,7 @@
 __default__: all
 
 verify: $(PROG) input.txt
-	$(PROG) < input.txt | ../../verify.sh $(YEAR) $(DAY)
+	(time $(PROG) < input.txt) | ../../verify.sh $(YEAR) $(DAY)
 
 input.txt: ~/.config/aocd/token
 	aocd $(YEAR) $(DAY) > /tmp/input.txt && mv /tmp/input.txt input.txt

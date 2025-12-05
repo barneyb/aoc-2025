@@ -1,0 +1,33 @@
+struct StringBuilder;
+
+pub fn read_digits() {
+    StringBuilder* sb = StringBuilder__new(8);
+    while isdigit(peekchar()) {
+        sb.push(getchar());
+    }
+    return sb.into_chars();
+}
+
+pub fn read_int() {
+    int i = 0;
+    while isdigit(peekchar()) {
+        i = i * 10 + (getchar() - '0');
+    }
+    return i;
+}
+
+pub fn read_expected(char c) {
+    char actual = getchar();
+    if actual != c {
+        eprintf("Expected '%c', but got '%c'?!\n", c, actual);
+        exit(1);
+    }
+}
+
+pub fn read_if_present(char c) {
+    if peekchar() == c {
+        getchar();
+        return true;
+    }
+    return false;
+}
