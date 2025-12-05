@@ -20,7 +20,7 @@ fn sum_of_invalid_ids(Range* range) {
     int f;
     if len_lo == len_hi {
         # use of lo is arbitrary
-        fs = factors_less_than(len_lo, len_lo / 2 + 1);
+        fs = factors_no_larger_than(len_lo, len_lo / 2);
         while fs.size() > 0 {
             f = fs.pop();
             search(range,
@@ -30,7 +30,7 @@ fn sum_of_invalid_ids(Range* range) {
         }
         fs.drop();
     } else {
-        fs = factors_less_than(len_lo, len_lo / 2 + 1);
+        fs = factors_no_larger_than(len_lo, len_lo / 2);
         while fs.size() > 0 {
             f = fs.pop();
             search(range,
@@ -39,7 +39,7 @@ fn sum_of_invalid_ids(Range* range) {
                    len_lo / f);
         }
         fs.drop();
-        fs = factors_less_than(len_hi, len_hi / 2 + 1);
+        fs = factors_no_larger_than(len_hi, len_hi / 2);
         while fs.size() > 0 {
             f = fs.pop();
             search(range,
@@ -53,6 +53,7 @@ fn sum_of_invalid_ids(Range* range) {
     return range.invalid_sum();
 }
 
+# I consume both prefixes!
 fn search(Range* range, char* plo, char* phi, int rep) {
     int ihi = atoi(phi);
     free(phi);
@@ -69,22 +70,30 @@ fn search(Range* range, char* plo, char* phi, int rep) {
     }
 }
 
+# I return a new NTBS consisting of `n` repeats of `str`.
 fn repeat(char* str, int n) { # todo: utils? jstdlib?
-    # todo: efficiency
-    StringBuilder* sb = StringBuilder__new(10);
+    if n < 0 { return null; }
+    if n == 1 { return strclone(str); }
+    int len = strlen(str);
+    char* result = malloc(len * n + 1);
+    char* curr = result;
     int i = 0;
     while i < n {
-        sb.push_str(str);
+        memcpy(curr, str, len);
+        curr = curr + len;
         i = i + 1;
     }
-    return sb.into_chars();
+    *curr = null;
+    return result;
 }
 
-fn intcmp(int a, int b) { return a - b; }
-
-fn factors_less_than(int n, int too_big) {
+# I return a new `ArrayList` containing all factors of `n`, including 1 and
+# `n` itself, in arbitrary order. If `n` is not a natural number (1, 2, 3, ...)
+# results are undefined.
+fn factors(int n) { # todo: utils? jstdlib?
     ArrayList* fs = ArrayList__new(5);
     fs.push(1);
+    if n == 1 { return fs; }
     fs.push(n);
     int i = 2;
     int j = n;
@@ -98,14 +107,17 @@ fn factors_less_than(int n, int too_big) {
         }
         i = i + 1;
     }
+    return fs;
+}
+
+fn intcmp(int a, int b) { return a - b; }
+
+# I return a new `ArrayList` containing all factors of `n` no larger than `max`,
+# in ascending order. Both 1 and `n` may be included, if they're not too large.
+fn factors_no_larger_than(int n, int max) {
+    ArrayList* fs = factors(n);
     fs.sort(&intcmp);
-#    char* s = fs.to_string(&itoa);
-#    printf("    all factors of %d: %s\n", n, s);
-#    free(s);
-    while fs.size() > 0 && fs.peek() >= too_big { fs.pop(); }
-#    s = fs.to_string(&itoa);
-#    printf("    in-range factors of %d: %s\n", n, s);
-#    free(s);
+    while fs.size() > 0 && fs.peek() > max { fs.pop(); }
     return fs;
 }
 
@@ -121,8 +133,9 @@ fn parse() {
     return ranges;
 }
 
-fn aintoi(char* s) { # todo:utils?
-    int i = atoi(s);
-    free(s);
+# I _consume_ `str` while parsing it into a base-10 integer as if by `atoi`.
+fn aintoi(char* str) { # todo:utils?
+    int i = atoi(str);
+    free(str);
     return i;
 }
