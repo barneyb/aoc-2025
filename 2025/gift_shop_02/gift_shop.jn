@@ -7,9 +7,106 @@ pub fn main() {
         if rp == null { done; }
         sum = sum + sum_of_invalid_ids(*rp);
     }
-    aocd_verify_a("%d", sum);
+    aocd_verify_b("%d", sum);
     free(itr);
     ranges.drop();
+}
+
+fn sum_of_invalid_ids(Range* range) {
+    printf("%s-%s\n", range.lo(), range.hi());
+    int len_lo = strlen(range.lo());
+    int len_hi = strlen(range.hi());
+    ArrayList* fs;
+    int f;
+    if len_lo == len_hi {
+        # use of lo is arbitrary
+        fs = factors_less_than(len_lo, len_lo / 2 + 1);
+        while fs.size() > 0 {
+            f = fs.pop();
+            search(range,
+                   substr(range.lo(), 0, f),
+                   substr(range.hi(), 0, f),
+                   len_lo / f);
+        }
+        fs.drop();
+    } else {
+        fs = factors_less_than(len_lo, len_lo / 2 + 1);
+        while fs.size() > 0 {
+            f = fs.pop();
+            search(range,
+                   substr(range.lo(), 0, f),
+                   itoa(pow(10, f) - 1),
+                   len_lo / f);
+        }
+        fs.drop();
+        fs = factors_less_than(len_hi, len_hi / 2 + 1);
+        while fs.size() > 0 {
+            f = fs.pop();
+            search(range,
+                   itoa(pow(10, f - 1)),
+                   substr(range.hi(), 0, f),
+                   len_hi / f);
+        }
+        fs.drop();
+    }
+    printf("  Found %d invalid ids summing to %d\n", range.invalid_count(), range.invalid_sum());
+    return range.invalid_sum();
+}
+
+fn search(Range* range, char* plo, char* phi, int rep) {
+    int ihi = atoi(phi);
+    free(phi);
+    int i = atoi(plo);
+    free(plo);
+#    if rep != 2 { return; } # todo: cripple for part a...
+    while i <= ihi {
+        char* s = itoa(i);
+        int n = aintoi(repeat(s, rep));
+        free(s);
+        if range.is_too_large(n) { done; }
+        range.mark_invalid(n);
+        i = i + 1;
+    }
+}
+
+fn repeat(char* str, int n) { # todo: utils? jstdlib?
+    # todo: efficiency
+    StringBuilder* sb = StringBuilder__new(10);
+    int i = 0;
+    while i < n {
+        sb.push_str(str);
+        i = i + 1;
+    }
+    return sb.into_chars();
+}
+
+fn intcmp(int a, int b) { return a - b; }
+
+fn factors_less_than(int n, int too_big) {
+    ArrayList* fs = ArrayList__new(5);
+    fs.push(1);
+    fs.push(n);
+    int i = 2;
+    int j = n;
+    while i < j {
+        j = n / i;
+        if j * i == n {
+            fs.push(i);
+            if i != j {
+                fs.push(j);
+            }
+        }
+        i = i + 1;
+    }
+    fs.sort(&intcmp);
+#    char* s = fs.to_string(&itoa);
+#    printf("    all factors of %d: %s\n", n, s);
+#    free(s);
+    while fs.size() > 0 && fs.peek() >= too_big { fs.pop(); }
+#    s = fs.to_string(&itoa);
+#    printf("    in-range factors of %d: %s\n", n, s);
+#    free(s);
+    return fs;
 }
 
 fn parse() {
@@ -24,54 +121,8 @@ fn parse() {
     return ranges;
 }
 
-fn sum_of_invalid_ids(Range* r) {
-    int sum = 0;
-    int plen = strlen(r.hi()) / 2;
-    int plo = aintoi(without_last(r.lo(), plen));
-    int phi = aintoi(without_last(r.hi(), plen));
-#    printf("from %s-%s, take prefixes %d-%d, from mag %d\n", r.lo(), r.hi(), plo, phi, mag(plo));
-    bool started = false;
-    while plo <= phi {
-        int n = plo * mag(plo) + plo;
-#        printf("  w/ %d, is %d in range? %b\n", plo, n, r.contains(n));
-        if r.contains(n) {
-            sum = sum + n;
-            started = true;
-        } else if started {
-            done;
-        }
-        plo = plo + 1;
-    }
-    return sum;
-}
-
-fn without_last(char* str, int suf_len) {
-    int l = strlen(str) - suf_len;
-    char* prefix = calloc(l + 1, 1);
-    memcpy(prefix, str, l);
-    return prefix;
-}
-
-fn aintoi(char* s) {
+fn aintoi(char* s) { # todo:utils?
     int i = atoi(s);
     free(s);
     return i;
-}
-
-fn mag(int i) {
-    if i < 10 { return 10; }
-    if i < 100 { return 100; }
-    if i < 1000 { return 1000; }
-    if i < 10000 { return 10000; }
-    if i < 100000 { return 100000; }
-    if i < 1000000 { return 1000000; }
-    if i < 10000000 { return 10000000; }
-    if i < 100000000 { return 100000000; }
-    if i < 1000000000 { return 1000000000; }
-    if i < 10000000000 { return 10000000000; }
-    if i < 100000000000 { return 100000000000; }
-    if i < 1000000000000 { return 1000000000000; }
-    if i < 10000000000000 { return 10000000000000; }
-    eprintf("huge-ass number %d has unknown magnitude\n", i);
-    exit(1);
 }
