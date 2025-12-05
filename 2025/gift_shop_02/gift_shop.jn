@@ -105,29 +105,12 @@ fn search(Range* range, char* plo, char* phi, int rep) {
 #    if rep != 2 { return; }
     while i <= ihi {
         char* s = itoa(i);
-        int n = aintoi(repeat(s, rep));
+        int n = aintoi(repeat_str(s, rep));
         free(s);
         if range.is_too_large(n) { done; }
         range.mark_invalid(n);
         i = i + 1;
     }
-}
-
-# I return a new NTBS consisting of `n` repeats of `str`.
-fn repeat(char* str, int n) { # todo: utils? jstdlib?
-    if n < 0 { return null; }
-    if n == 1 { return strclone(str); }
-    int len = strlen(str);
-    char* result = malloc(len * n + 1);
-    char* curr = result;
-    int i = 0;
-    while i < n {
-        memcpy(curr, str, len);
-        curr = curr + len;
-        i = i + 1;
-    }
-    *curr = null;
-    return result;
 }
 
 # I return a new `ArrayList` containing all factors of `n`, including 1 and
@@ -174,11 +157,4 @@ fn parse() {
         if !read_if_present(',') { done; }
     }
     return ranges;
-}
-
-# I _consume_ `str` while parsing it into a base-10 integer as if by `atoi`.
-fn aintoi(char* str) { # todo:utils?
-    int i = atoi(str);
-    free(str);
-    return i;
 }
