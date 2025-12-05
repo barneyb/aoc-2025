@@ -1,20 +1,77 @@
+char ROLL = '@';
+
+struct Map {
+    int width,
+    int height,
+    char* grid,
+    int** adj,
+}
+
+fn Map__new(int width, int height, char* grid, int** adj) {
+    Map* m = malloc(sizeof(Map));
+    m.width = width;
+    m.height = height;
+    m.grid = grid;
+    m.adj = adj;
+    return m;
+}
+
+fn Map_drop(Map* self) {
+    free(self.grid);
+    drop_adjacent(self.adj);
+    free(self);
+}
+
 pub fn main() {
-    puts("Hello, printing_department!");
-    int line_count = 0;
-    int char_count = 0;
-    int line_len = -1;
-    char* fmt = "Input is a grid, %d rows by %d columns!\n";
-    while !iseof() {
-        char* line = read_line();
-        int len = strlen(line);
-        if line_len < 0 { line_len = len; }
-        else if line_len != len {
-            fmt = "Input has %d lines averaging ~%d chars each!\n";
-        }
-        char_count = char_count + len;
-        free(line);
-        line_count = line_count + 1;
+    Map* m = parse();
+    aocd_verify_a("%d", count_accessible(m));
+    m.drop();
+}
+
+fn count_accessible(Map* m) {
+    char* grid = m.grid;
+    int** adj = m.adj;
+    int rolls = 0;
+    int t = m.width * m.height;
+    while t > 0 {
+        t = t - 1;
+        if grid[t] != ROLL { again; }
+        if has_four_neighbors(t, grid, adj[t]) { again; }
+        rolls = rolls + 1;
     }
-    printf(fmt, line_count, char_count / line_count);
-#    aocd_verify_a("%d", );
+    return rolls;
+}
+
+fn has_four_neighbors(int t, char* grid, int* adj) {
+    int count = 0;
+    int n = adj;
+    while *n >= 0 {
+        char c = grid[*n];
+        n = n + sizeof(int);
+        if c == ROLL {
+            if count == 3 { return true; }
+            count = count + 1;
+        }
+    }
+    return false;
+}
+
+fn parse() {
+    char* line = read_line();
+    int width = strlen(line);
+    StringBuilder* sb = StringBuilder__new(width * width + 1);
+    sb.push_str(line);
+    free(line);
+    int height = 1;
+    while !iseof() {
+        line = read_line();
+        sb.push_str(line);
+        free(line);
+        height = height + 1;
+    }
+
+    return Map__new(width,
+                    height,
+                    sb.into_chars(),
+                    build_eight_way_adjacent(width, height));
 }
