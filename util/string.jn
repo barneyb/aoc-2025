@@ -1,0 +1,42 @@
+# I parse `str` into a base-10 integer as if by `atoi`, _consuming `str`_.
+pub fn aintoi(char* str) {
+    int i = atoi(str);
+    free(str);
+    return i;
+}
+
+# I return a new NTBS consisting of `n` repeats of `str`.
+pub fn repeat_str(char* str, int n) {
+    if n < 0 { return null; }
+    if n == 0 { return strclone(""); }
+    if n == 1 { return strclone(str); }
+    int len = strlen(str);
+    if len == 0 { return strclone(""); }
+
+    # there's something interesting to do
+    int to_copy = len * n;
+    char* result = malloc(to_copy + 1);
+
+    # bootstrap the first copy
+    memcpy(result, str, len);
+    char* curr = result + len;
+    int copied = len;
+
+    # double the result's length as many times as
+    # possible, for larger memcpys
+    while copied << 1 < to_copy {
+        memcpy(curr, result, copied);
+        curr = curr + copied;
+        copied = copied + copied;
+    }
+
+    # a final less-than-double, if needed
+    n = to_copy - copied;
+    if n != 0 {
+        memcpy(curr, result, n);
+        curr = curr + n;
+    }
+
+    *curr = null;
+    return result;
+}
