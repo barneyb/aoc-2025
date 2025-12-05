@@ -3,9 +3,10 @@ pub fn main() {
     int part_b = 0;
     while !iseof() {
         char* l = read_line();
-        int j = max_joltage(l, 2);
+        int len = strlen(l);
+        int j = max_joltage(l, len, 2);
         part_a = part_a + j;
-        j = max_joltage(l, 12);
+        j = max_joltage(l, len, 12);
         part_b = part_b + j;
         free(l);
     }
@@ -13,20 +14,25 @@ pub fn main() {
     aocd_verify_b("%d", part_b);
 }
 
-fn max_joltage(char* bank, int n) {
-    if n == 0 { return 0; }
-    int len = strlen(bank);
-    int remaining = n - 1;
-    int a = idx_of_largest_char(bank, len - remaining);
-    return (bank[a] - '0') * pow(10, remaining) + max_joltage(bank + a + 1, remaining);
+fn max_joltage(char* bank, int to_check, int to_energize) {
+    if to_energize == 0 { return 0; }
+    to_energize = to_energize - 1;
+    int a = idx_of_largest_digit(bank, to_check - to_energize);
+    int next = a + 1;
+    return (bank[a] - '0') * pow(10, to_energize)
+        + max_joltage(bank + next, to_check - next, to_energize);
 }
 
-fn idx_of_largest_char(char* str, int len) {
+fn idx_of_largest_digit(char* str, int len) {
     int idx = 0;
     int i = 1;
     while i < len {
         if str[i] > str[idx] {
             idx = i;
+            # can't be larger than 9
+            if str[i] == '9' {
+                done;
+            }
         }
         i = i + 1;
     }
