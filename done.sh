@@ -13,6 +13,11 @@ if [ "$BRANCH" = "master" ]; then
     exit 1
 fi
 
+if ! git log --exit-code -E --grep '^[a-z]+!' --grep '^Revert' --grep '^WIP' HEAD ^master; then
+    echo "There are temp commits (above). Refusing to proceed."
+    exit 1
+fi
+
 ./run_all.sh
 git checkout master
 git merge --no-edit $BRANCH
