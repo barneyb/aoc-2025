@@ -1,18 +1,60 @@
 pub fn main() {
     ArrayList* ranges = parse();
     Iter* itr = ranges.iter();
-    int sum = 0;
+    int part_a = 0;
+    int part_b = 0;
     while true {
         Range** rp = itr.next();
         if rp == null { done; }
-        sum = sum + sum_of_invalid_ids(*rp);
+        # This only works because part A doesn't mark IDs invalid on the Range.
+        # Extremely silly, but didn't want to try and plumb them together. Yet?
+        part_a = part_a + sum_of_invalid_ids_a(*rp);
+        part_b = part_b + sum_of_invalid_ids_b(*rp);
     }
-    aocd_verify_b("%d", sum);
+    aocd_verify_a("%d", part_a);
+    aocd_verify_b("%d", part_b);
     free(itr);
     ranges.drop();
 }
 
-fn sum_of_invalid_ids(Range* range) {
+fn sum_of_invalid_ids_a(Range* r) {
+    int sum = 0;
+    int plen = strlen(r.hi()) / 2;
+    int plo = aintoi(without_last(r.lo(), plen));
+    int phi = aintoi(without_last(r.hi(), plen));
+    bool started = false;
+    while plo <= phi {
+        int n = plo * mag(plo) + plo;
+        if r.contains(n) {
+            sum = sum + n;
+            started = true;
+        } else if started {
+            done;
+        }
+        plo = plo + 1;
+    }
+    return sum;
+}
+
+fn without_last(char* str, int suf_len) {
+    return substr(str, 0, strlen(str) - suf_len);
+}
+
+fn mag(int i) {
+    if i < 0 {
+        eprintf("non-natural number %d makes no sense\n", i);
+        exit(1);
+    }
+    if i < 10 { return 10; }
+    if i < 100 { return 100; }
+    if i < 1000 { return 1000; }
+    if i < 10000 { return 10000; }
+    if i < 100000 { return 100000; }
+    eprintf("huge-ass number %d has unknown magnitude\n", i);
+    exit(1);
+}
+
+fn sum_of_invalid_ids_b(Range* range) {
     printf("%s-%s\n", range.lo(), range.hi());
     int len_lo = strlen(range.lo());
     int len_hi = strlen(range.hi());
@@ -59,7 +101,8 @@ fn search(Range* range, char* plo, char* phi, int rep) {
     free(phi);
     int i = atoi(plo);
     free(plo);
-#    if rep != 2 { return; } # todo: cripple for part a...
+# uncomment to cripple for part A
+#    if rep != 2 { return; }
     while i <= ihi {
         char* s = itoa(i);
         int n = aintoi(repeat(s, rep));
