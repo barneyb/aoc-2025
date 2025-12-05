@@ -1,13 +1,34 @@
 pub fn main() {
     puts("Hello, lobby!");
-    int line_count = 0;
-    int char_count = 0;
+    int sum = 0;
     while !iseof() {
         char* l = read_line();
-        char_count = char_count + strlen(l) + 1; # the newline
+        int j = max_joltage(l);
+        printf("bank '%s' produces %d\n", l, j);
         free(l);
-        line_count = line_count + 1;
+        sum = sum + j;
     }
-    printf("There are %d lines (%d chars) of input waiting!\n", line_count, char_count);
-#    aocd_verify_a("%d", );
+    aocd_verify_a("%d", sum);
+}
+
+fn max_joltage(char* bank) {
+    int len = strlen(bank);
+    int a = idx_of_largest_char(bank, len - 1);
+    int start = a + 1;
+    int b = start + idx_of_largest_char(bank + start, len - start);
+    int max = (bank[a] - '0') * 10 + (bank[b] - '0');
+    printf("  at %d: %c, then at %d: %c => %d\n", a, bank[a], b, bank[b], max);
+    return max;
+}
+
+fn idx_of_largest_char(char* str, int len) {
+    int idx = 0;
+    int i = 1;
+    while i < len {
+        if str[i] > str[idx] {
+            idx = i;
+        }
+        i = i + 1;
+    }
+    return idx;
 }

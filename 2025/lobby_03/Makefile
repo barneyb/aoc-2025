@@ -9,6 +9,9 @@ OBJECTS = \
 all: $(PROG) input.txt
 	time $(PROG) < input.txt
 
+ex1: $(PROG) ex1.txt
+	$(PROG) < ex1.txt
+
 $(OUT)/lobby.s: \
 		$(UTIL)/$(OUT)/aocd.jnh \
 		lobby.jn
