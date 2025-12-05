@@ -1,0 +1,13 @@
+pub fn main() {
+    puts("Hello, lobby!");
+    int line_count = 0;
+    int char_count = 0;
+    while !iseof() {
+        char* l = read_line();
+        char_count = char_count + strlen(l) + 1; # the newline
+        free(l);
+        line_count = line_count + 1;
+    }
+    printf("There are %d lines (%d chars) of input waiting!\n", line_count, char_count);
+#    aocd_verify_a("%d", );
+}
