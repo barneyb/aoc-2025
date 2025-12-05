@@ -4,13 +4,10 @@ pub fn main() {
     printf("Map is %dx%d w/ %d grid elements!\n", map.width(), map.height(), len);
 
     int** adj = build_eight_way_adjacent(map.width(), map.height());
-#    int i = 0;
-#    while adj[i] != null {
-#        printf("adj[%d]: ", i);
-#        print_adj_array(adj[i]);
-#        puts("");
-#        i = i + 1;
-#    }
+#    print_adjacent(adj);
+#    drop_adjacent(adj);
+#    map.drop();
+#    return;
 
 #    puts("Initial state:");
 #    map.print();
@@ -43,7 +40,7 @@ pub fn main() {
     printf("Projected value after %d minutes: %d\n", target_minutes, map.resource_value());
     aocd_verify_b("%d", map.resource_value());
 
-    free_adjacent(adj);
+    drop_adjacent(adj);
     map.drop();
 }
 
@@ -132,162 +129,4 @@ fn has_three(char* grid, int* adj, char target) {
         n = n + sizeof(int);
     }
     return false;
-}
-
-fn free_adjacent(int** adj) {
-    int i = 0;
-    while adj[i] != null {
-        free(adj[i]);
-        i = i + 1;
-    }
-    free(adj);
-}
-
-fn build_eight_way_adjacent(int width, int height) { # todo: util?
-    if width < 3 { eprintf("Width must be at least 3\n"); exit(3); }
-    if height < 3 { eprintf("Height must be at least 3\n"); exit(3); }
-    int** adj = calloc(width * height + 1, sizeof(int*));
-    int y; int x; int i;
-    # compiler temporaries for common subexpressions...
-    int pr; int nr;
-    int* arr;
-
-    # first, the middle...
-    y = height - 2;
-    while y > 0 {
-        x = width - 2;
-        while x > 0 {
-            i = y * width + x;
-            arr = calloc(9, sizeof(int));
-            pr = i - width;
-            nr = i + width;
-            arr[0] = pr - 1;
-            arr[1] = pr;
-            arr[2] = pr + 1;
-            arr[3] = i - 1;
-            arr[4] = i + 1;
-            arr[5] = nr - 1;
-            arr[6] = nr;
-            arr[7] = nr + 1;
-            arr[8] = -1;
-            adj[i] = arr;
-            x = x - 1;
-        }
-        y = y - 1;
-    }
-
-    # next, top and bottom...
-    x = width - 2;
-    while x > 0 {
-        i = x;
-        nr = i + width;
-        adj[i] = arrlit6(i - 1,
-                         i + 1,
-                         nr - 1,
-                         nr,
-                         nr + 1,
-                         -1);
-
-        i = (height - 1) * width + x;
-        pr = i - width;
-        adj[i] = arrlit6(pr - 1,
-                         pr,
-                         pr + 1,
-                         i - 1,
-                         i + 1,
-                         -1);
-        x = x - 1;
-    }
-
-    # then left and right...
-    y = height - 2;
-    while y > 0 {
-        i = y * width;
-        nr = i + width;
-        pr = i - width;
-        adj[i] = arrlit6(pr,
-                         pr + 1,
-                         i + 1,
-                         nr,
-                         nr + 1,
-                         -1);
-
-        i = (y + 1) * width - 1;
-        nr = i + width;
-        pr = i - width;
-        adj[i] = arrlit6(pr -1,
-                         pr,
-                         i - 1,
-                         nr - 1,
-                         nr,
-                         -1);
-        y = y - 1;
-    }
-
-    # and finally...
-    # top left corner,
-    i = 0;
-    nr = i + width;
-    adj[i] = arrlit4(i + 1,
-                     nr,
-                     nr + 1,
-                     -1);
-
-    # top right corner,
-    i = width - 1;
-    nr = i + width;
-    adj[i] = arrlit4(i - 1,
-                     nr - 1,
-                     nr,
-                     -1);
-
-    # bottom right corner,
-    i = height * width - 1;
-    pr = i - width;
-    adj[i] = arrlit4(pr - 1,
-                     pr,
-                     i - 1,
-                     -1);
-
-    # and bottom left corner.
-    i = (height - 1) * width;
-    pr = i - width;
-    adj[i] = arrlit4(pr,
-                     pr + 1,
-                     i + 1,
-                     -1);
-
-    # fin.
-    return adj;
-}
-
-fn arrlit4(void a, void b, void c, void d) { # todo: array literals, please?
-    void* arr = calloc(4, sizeof(void));
-    arr[0] = a;
-    arr[1] = b;
-    arr[2] = c;
-    arr[3] = d;
-    return arr;
-}
-
-fn arrlit6(void a, void b, void c, void d, void e, void f) {
-    void* arr = calloc(6, sizeof(void));
-    arr[0] = a;
-    arr[1] = b;
-    arr[2] = c;
-    arr[3] = d;
-    arr[4] = e;
-    arr[5] = f;
-    return arr;
-}
-
-fn print_adj_array(int* arr) { # todo: util-ish??
-    putchar('[');
-    printf("%d", *arr);
-    arr = arr + sizeof(int);
-    while *arr >= 0 {
-        printf(",%d", *arr);
-        arr = arr + sizeof(int);
-    }
-    putchar(']');
 }

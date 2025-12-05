@@ -1,0 +1,210 @@
+# Functions for working with an "adjacent" of a rectangular grid, which is an
+# array of array of `int`. The outer array has one element for each tile in the
+# grid, numbered from zero, and is `null`-terminated. Each inner array has one
+# element for each adjacent tile, and is terminated with -1 (not `null`).
+#
+# Note that an adjacent doesn't know its dimensions, only the total number of
+# tiles.
+#
+# Construct, print, and drop an eight-way adjacent for a 4x3 grid:
+#
+# ```johann
+# int** adj = build_eight_way_adjacent(4, 3);
+# print_adjacent(adj);
+# drop_adjacent(adj);
+# ```
+#
+# ```
+#     0: [1,4,5]
+#     1: [0,2,4,5,6]
+#     2: [1,3,5,6,7]
+#     3: [2,6,7]
+#     4: [0,1,5,8,9]
+#     5: [0,1,2,4,6,8,9,10]
+#     6: [1,2,3,5,7,9,10,11]
+#     7: [2,3,6,10,11]
+#     8: [4,5,9]
+#     9: [4,5,6,8,10]
+#    10: [5,6,7,9,11]
+#    11: [6,7,10]
+# ```
+#
+# This mess is because Johann (currently) equates `null` and zero, and zero is a
+# valid tile number, so a different terminator is required to mark the end of
+# the variable-length subarrays. Using a list of lists would also avoid the
+# weirdness, but iterating lists is (currently) just as messy.
+
+# I build an eight-way adjacent for a grid of the given size.
+pub fn build_eight_way_adjacent(int width, int height) {
+    if width < 3 { eprintf("Width must be at least 3\n"); exit(3); }
+    if height < 3 { eprintf("Height must be at least 3\n"); exit(3); }
+    int** adj = calloc(width * height + 1, sizeof(int*));
+    int y; int x; int i;
+    # compiler temporaries for common subexpressions...
+    int pr; int nr;
+    int* arr;
+
+    # first, the middle...
+    y = height - 2;
+    while y > 0 {
+        x = width - 2;
+        while x > 0 {
+            i = y * width + x;
+            arr = calloc(9, sizeof(int));
+            pr = i - width;
+            nr = i + width;
+            arr[0] = pr - 1;
+            arr[1] = pr;
+            arr[2] = pr + 1;
+            arr[3] = i - 1;
+            arr[4] = i + 1;
+            arr[5] = nr - 1;
+            arr[6] = nr;
+            arr[7] = nr + 1;
+            arr[8] = -1;
+            adj[i] = arr;
+            x = x - 1;
+        }
+        y = y - 1;
+    }
+
+    # next, top and bottom...
+    x = width - 2;
+    while x > 0 {
+        i = x;
+        nr = i + width;
+        adj[i] = arrlit6(i - 1,
+                         i + 1,
+                         nr - 1,
+                         nr,
+                         nr + 1,
+                         -1);
+
+        i = (height - 1) * width + x;
+        pr = i - width;
+        adj[i] = arrlit6(pr - 1,
+                         pr,
+                         pr + 1,
+                         i - 1,
+                         i + 1,
+                         -1);
+        x = x - 1;
+    }
+
+    # then left and right...
+    y = height - 2;
+    while y > 0 {
+        i = y * width;
+        nr = i + width;
+        pr = i - width;
+        adj[i] = arrlit6(pr,
+                         pr + 1,
+                         i + 1,
+                         nr,
+                         nr + 1,
+                         -1);
+
+        i = (y + 1) * width - 1;
+        nr = i + width;
+        pr = i - width;
+        adj[i] = arrlit6(pr -1,
+                         pr,
+                         i - 1,
+                         nr - 1,
+                         nr,
+                         -1);
+        y = y - 1;
+    }
+
+    # and finally...
+    # top left corner,
+    i = 0;
+    nr = i + width;
+    adj[i] = arrlit4(i + 1,
+                     nr,
+                     nr + 1,
+                     -1);
+
+    # top right corner,
+    i = width - 1;
+    nr = i + width;
+    adj[i] = arrlit4(i - 1,
+                     nr - 1,
+                     nr,
+                     -1);
+
+    # bottom right corner,
+    i = height * width - 1;
+    pr = i - width;
+    adj[i] = arrlit4(pr - 1,
+                     pr,
+                     i - 1,
+                     -1);
+
+    # and bottom left corner.
+    i = (height - 1) * width;
+    pr = i - width;
+    adj[i] = arrlit4(pr,
+                     pr + 1,
+                     i + 1,
+                     -1);
+
+    # fin.
+    return adj;
+}
+
+# I drop an adjacent.
+pub fn drop_adjacent(int** adj) {
+    int i = 0;
+    while adj[i] != null {
+        free(adj[i]);
+        i = i + 1;
+    }
+    free(adj);
+}
+
+# I print an adjacent, one tile per line, with its index and list of adjacent
+# tiles.
+pub fn print_adjacent(int** adj) {
+    int n = 0;
+    while adj[n] != null {
+        printf("%5d: ", n);
+        print_adjacent_to(adj, n);
+        puts("");
+        n = n + 1;
+    }
+}
+
+# I print a comma-delimited list of tiles adjacent to the given tile, wrapped in
+# brackets, according to the given adjacent.
+pub fn print_adjacent_to(int** adj, int n) {
+    int* arr = adj[n];
+    putchar('[');
+    printf("%d", *arr);
+    arr = arr + sizeof(int);
+    while *arr >= 0 {
+        printf(",%d", *arr);
+        arr = arr + sizeof(int);
+    }
+    putchar(']');
+}
+
+fn arrlit4(void a, void b, void c, void d) { # todo: array literals, please?
+    void* arr = calloc(4, sizeof(void));
+    arr[0] = a;
+    arr[1] = b;
+    arr[2] = c;
+    arr[3] = d;
+    return arr;
+}
+
+fn arrlit6(void a, void b, void c, void d, void e, void f) {
+    void* arr = calloc(6, sizeof(void));
+    arr[0] = a;
+    arr[1] = b;
+    arr[2] = c;
+    arr[3] = d;
+    arr[4] = e;
+    arr[5] = f;
+    return arr;
+}
