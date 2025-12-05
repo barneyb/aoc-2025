@@ -55,7 +55,7 @@ fn mag(int i) {
 }
 
 fn sum_of_invalid_ids_b(Range* range) {
-    printf("%s-%s\n", range.lo(), range.hi());
+#    printf("%s-%s\n", range.lo(), range.hi());
     int len_lo = strlen(range.lo());
     int len_hi = strlen(range.hi());
     ArrayList* fs;
@@ -91,7 +91,7 @@ fn sum_of_invalid_ids_b(Range* range) {
         }
         fs.drop();
     }
-    printf("  Found %d invalid ids summing to %d\n", range.invalid_count(), range.invalid_sum());
+#    printf("  Found %d invalid ids summing to %d\n", range.invalid_count(), range.invalid_sum());
     return range.invalid_sum();
 }
 

@@ -19,7 +19,7 @@ pub fn main() {
         free(map.next_tick(next_grid(map.grid(), adj, len)));
 #        map.print();
     }
-    map.print();
+#    map.print();
     printf("Resource value after %d minutes: %d\n", map.ticks(), map.resource_value());
     aocd_verify_a("%d", map.resource_value());
 
