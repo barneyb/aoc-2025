@@ -37,7 +37,7 @@ else
     fi
 fi
 
-if ! git diff --quiet; then
+if ! git diff --quiet || ! git diff --quiet --staged; then
     git commit -am "WIP: auto-commit before starting $YEAR/$DAY"
 fi
 
@@ -84,6 +84,9 @@ OBJECTS = \\
 all: \$(PROG) input.txt
 	time \$(PROG) < input.txt
 
+ex1: \$(PROG) ex1.txt
+	\$(PROG) < ex1.txt
+
 \$(OUT)/${NAME}.s: \\
 		\$(UTIL)/\$(OUT)/aocd.jnh \\
 		${NAME}.jn
@@ -97,16 +100,25 @@ pub fn main() {
     puts("Hello, ${NAME}!");
     int line_count = 0;
     int char_count = 0;
+    int line_len = -1;
+    char* fmt = "Input is a grid, %d rows by %d columns!\n";
     while !iseof() {
-        char* l = read_line();
-        char_count = char_count + strlen(l) + 1; # the newline
-        free(l);
+        char* line = read_line();
+        int len = strlen(line);
+        if line_len < 0 { line_len = len; }
+        else if line_len != len {
+            fmt = "Input has %d lines averaging ~%d chars each!\n";
+        }
+        char_count = char_count + len;
+        free(line);
         line_count = line_count + 1;
     }
-    printf("There are %d lines (%d chars) of input waiting!\n", line_count, char_count);
+    printf(fmt, line_count, char_count / line_count);
 #    aocd_verify_a("%d", );
 }
 EOF
+
+touch ex1.txt
 
 make
 git add .
