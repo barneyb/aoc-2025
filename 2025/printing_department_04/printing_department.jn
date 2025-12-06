@@ -25,35 +25,34 @@ fn Map_drop(Map* self) {
 
 pub fn main() {
     Map* m = parse();
-    aocd_verify_a("%d", count_accessible(m));
-    int removed = 0;
-    char* grid = m.grid;
-    while true {
-        ArrayList* accessible = get_accessible(m);
-        if accessible.size() == 0 {
-            accessible.drop();
-            done;
-        }
-        while accessible.size() > 0 {
-            int t = accessible.pop();
-            removed = removed + 1;
-            if grid[t] != ROLL {
-                eprintf("tile %d is accessible, but isn't a roll?!\n", t);
-                exit(4);
-            }
-            grid[t] = OPEN;
-        }
-        accessible.drop();
-    }
-    aocd_verify_b("%d", removed);
+    ArrayList* accessible = get_accessible(m);
+    aocd_verify_a("%d", accessible.size());
+    aocd_verify_b("%d", count_removable(m, accessible));
+    accessible.drop();
     m.drop();
 }
 
-fn count_accessible(Map* m) {
-    ArrayList* accessible = get_accessible(m);
-    int result = accessible.size();
-    accessible.drop();
-    return result;
+fn count_removable(Map* m, ArrayList* queue) {
+    # now cull and count
+    char* grid = m.grid;
+    int** adj = m.adj;
+    int removed = 0;
+    while queue.size() > 0 {
+        int t = queue.pop();
+        if grid[t] != ROLL { again; }
+        ArrayList* rs = get_four_rolls_adjacent_to(grid, t, adj[t]);
+        if rs.size() < 4 {
+            # remove it!
+            grid[t] = OPEN;
+            removed = removed + 1;
+            # enqueue adjacent
+            while rs.size() > 0 {
+                queue.push(rs.pop());
+            }
+        }
+        rs.drop();
+    }
+    return removed;
 }
 
 fn get_accessible(Map* m) {
