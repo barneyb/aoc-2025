@@ -1,0 +1,20 @@
+pub fn main() {
+    puts("Hello, cafeteria!");
+    int line_count = 0;
+    int char_count = 0;
+    int line_len = -1;
+    char* fmt = "Input is a grid, %d rows by %d columns!\n";
+    while !iseof() {
+        char* line = read_line();
+        int len = strlen(line);
+        if line_len < 0 { line_len = len; }
+        else if line_len != len {
+            fmt = "Input has %d lines averaging ~%d chars each!\n";
+        }
+        char_count = char_count + len;
+        free(line);
+        line_count = line_count + 1;
+    }
+    printf(fmt, line_count, char_count / line_count);
+#    aocd_verify_a("%d", );
+}
