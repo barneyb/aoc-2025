@@ -1,0 +1,113 @@
+char ROLL = '@';
+char OPEN = '.';
+
+struct Map {
+    int width,
+    int height,
+    char* grid,
+    int** adj,
+}
+
+fn Map__new(int width, int height, char* grid, int** adj) {
+    Map* m = malloc(sizeof(Map));
+    m.width = width;
+    m.height = height;
+    m.grid = grid;
+    m.adj = adj;
+    return m;
+}
+
+fn Map_drop(Map* self) {
+    free(self.grid);
+    drop_adjacent(self.adj);
+    free(self);
+}
+
+pub fn main() {
+    Map* m = parse();
+    ArrayList* accessible = get_accessible(m);
+    aocd_verify_a("%d", accessible.size());
+    aocd_verify_b("%d", count_removable(m, accessible));
+    accessible.drop();
+    m.drop();
+}
+
+fn count_removable(Map* m, ArrayList* queue) {
+    # now cull and count
+    char* grid = m.grid;
+    int** adj = m.adj;
+    int removed = 0;
+    while queue.size() > 0 {
+        int t = queue.pop();
+        if grid[t] != ROLL { again; }
+        ArrayList* rs = get_four_rolls_adjacent_to(grid, t, adj[t]);
+        if rs.size() < 4 {
+            # remove it!
+            grid[t] = OPEN;
+            removed = removed + 1;
+            # enqueue adjacent
+            while rs.size() > 0 {
+                queue.push(rs.pop());
+            }
+        }
+        rs.drop();
+    }
+    return removed;
+}
+
+fn get_accessible(Map* m) {
+    ArrayList* rolls = ArrayList__new(8);
+    char* grid = m.grid;
+    int** adj = m.adj;
+    int t = m.width * m.height;
+    while t > 0 {
+        t = t - 1;
+        if grid[t] != ROLL { again; }
+        if has_four_neighbors(grid, t, adj[t]) { again; }
+        rolls.push(t);
+    }
+    return rolls;
+}
+
+fn has_four_neighbors(char* grid, int t, int* adj) {
+    ArrayList* ns = get_four_rolls_adjacent_to(grid, t, adj);
+    bool result = ns.size() >= 4;
+    ns.drop();
+    return result;
+}
+
+fn get_four_rolls_adjacent_to(char* grid, int t, int* adj) {
+    ArrayList* rolls = ArrayList__new(4);
+    int n = adj;
+    while *n >= 0 {
+        char c = grid[*n];
+        if c == ROLL {
+            rolls.push(*n);
+            if rolls.size() == 4 {
+                return rolls;
+            }
+        }
+        n = n + sizeof(int);
+    }
+    return rolls;
+}
+
+fn parse() {
+    char* line = read_line();
+    int width = strlen(line);
+    StringBuilder* sb = StringBuilder__new(width * width + 1);
+    sb.push_str(line);
+    free(line);
+    int height = 1;
+    while !iseof() {
+        line = read_line();
+        sb.push_str(line);
+        free(line);
+        height = height + 1;
+    }
+
+    return Map__new(width,
+                    height,
+                    sb.into_chars(),
+                    build_eight_way_adjacent(width, height));
+}
