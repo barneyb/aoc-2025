@@ -48,6 +48,19 @@ pub fn main() {
     aocd_verify_a("%d", ing_count);
     printf("Fresh IDs        : %d\n", id_count);
     aocd_verify_b("%d", id_count);
+
+    id_count = 0;
+    SortedValues* itr = ranges.values();
+    while true {
+        Range** ptr = itr.next();
+        if ptr == null { done; }
+        Range* r = *ptr;
+        id_count = id_count + r.size();
+    }
+    itr.drop();
+    printf("Fresh IDs        : %d\n", id_count);
+    aocd_verify_b("%d", id_count);
+
     ranges.drop();
 }
 

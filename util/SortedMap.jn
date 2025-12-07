@@ -1,4 +1,7 @@
 # I am a sorted map/dict/symbol table, based on a balanced binary search tree.
+
+struct ArrayList;
+
 pub struct SortedMap {
     void* cmp,
     void* drop_key,
@@ -6,16 +9,7 @@ pub struct SortedMap {
     Node* root,
 }
 
-# Type of `SortedMap`'s key iterator.
-pub struct SortedKeys {
-    void whosit
-}
 
-# I return a pointer to the next key, or `null` if exhausted.
-pub fn SortedKeys_next() {
-    eprintf("pub fn SortedKeys_next() is unimplemented\n"); # todo
-    exit(1);
-}
 
 struct Node {
     # BE CAREFUL! 'key' MUST be the first member!!
@@ -46,6 +40,139 @@ fn Node_key(Node* self) {
     if self == null { return 0; }
     return self.key;
 }
+
+
+
+struct Frame {
+    Node* n,
+    int dir, # <0 down, 0 self, >0 up
+}
+
+fn Frame__new(Node* n) {
+    Frame* f = malloc(sizeof(Frame));
+    f.n = n;
+    f.dir = -1;
+    return f;
+}
+
+
+
+struct NodeItr {
+    ArrayList* stack,
+}
+
+fn NodeItr__new(SortedMap* map) {
+    NodeItr* ks = malloc(sizeof(NodeItr));
+    ks.stack = ArrayList__new_owned(10, &free);
+    if map.root != null {
+        ArrayList_push(ks.stack, Frame__new(map.root));
+    }
+    return ks;
+}
+
+fn NodeItr_drop(NodeItr* self) {
+    ArrayList_drop(self.stack);
+    free(self);
+}
+
+fn NodeItr_next(NodeItr* self) {
+    #printf("\nnext!\n");
+    ArrayList* stack = self.stack;
+    if stack.size() == 0 {
+        return null;
+    }
+    Frame* f = stack.peek();
+    Node* curr = f.n;
+    #printf("  at %d, dir %d\n", curr.key, f.dir);
+    if f.dir < 0 {
+        while curr.left != null {
+            curr = curr.left;
+            f = Frame__new(curr);
+            stack.push(f);
+            #printf("  now at %d\n", curr.key);
+        }
+        f.dir = 0;
+        #printf("  done going left\n");
+    }
+    if curr.right == null {
+        #printf("  nothing to right, done with %d\n", curr.key);
+        free(stack.pop()); # i'm done
+        while stack.size() > 0 {
+            f = stack.peek();
+            if f.dir <= 0 {
+                #printf("  up to %d, set it to 0 (curr %d)\n", Node_key(f.n), f.dir);
+                f.dir = 0;
+                done;
+            }
+            #printf("  done w/ %d too!\n", Node_key(f.n));
+            free(stack.pop());
+        }
+    } else {
+        #printf("  right exists: push %d and set me going up\n", Node_key(curr.right));
+        stack.push(Frame__new(curr.right));
+        f.dir = 1;
+    }
+    #printf("  return %d\n", curr.key);
+    return curr;
+}
+
+
+
+# Type of `SortedMap`'s key iterator.
+pub struct SortedKeys {
+    void* holder,
+    NodeItr* node_itr,
+}
+
+fn SortedKeys__new(SortedMap* map) {
+    SortedKeys* s = malloc(sizeof(SortedKeys));
+    s.node_itr = NodeItr__new(map);
+    return s;
+}
+
+# I drop the iterator.
+pub fn SortedKeys_drop(SortedKeys* self) {
+    NodeItr_drop(self.node_itr);
+    free(self);
+}
+
+# I return a pointer to the next key, or `null` if exhausted.
+pub fn SortedKeys_next(SortedKeys* self) {
+    Node* curr = NodeItr_next(self.node_itr);
+    if curr == null { return null; }
+    self.holder = curr.key;
+    return self;
+}
+
+
+
+# Type of `SortedMap`'s value iterator.
+pub struct SortedValues {
+    void* holder,
+    NodeItr* node_itr,
+}
+
+fn SortedValues__new(SortedMap* map) {
+    SortedValues* s = malloc(sizeof(SortedValues));
+    s.node_itr = NodeItr__new(map);
+    return s;
+}
+
+# I drop the iterator.
+pub fn SortedValues_drop(SortedValues* self) {
+    NodeItr_drop(self.node_itr);
+    free(self);
+}
+
+# I return a pointer to the next value, or `null` if exhausted.
+pub fn SortedValues_next(SortedValues* self) {
+    Node* curr = NodeItr_next(self.node_itr);
+    if curr == null { return null; }
+    self.holder = curr.value;
+    return self;
+}
+
+
 
 struct Mut {
     void value,
@@ -193,6 +320,8 @@ fn Mut_rotate_right(Mut* mut, Node* curr) {
     return mut.balance(next);
 }
 
+
+
 # I create a new map, using `cmp` to compare keys, with unowned keys and values.
 # Pass `null` to use value comparison, useful with primitives.
 pub fn SortedMap__new(void* cmp) {
@@ -303,8 +432,8 @@ pub fn SortedMap_last_key(SortedMap* self) {
 }
 
 # I print the tree in a line-oriented format, using `print_entry` to render
-# each key-value pair, by an in-order traversal. The root left-aligned, and each
-# node is indented a few spaces more than its parent.
+# each key-value pair, by an in-order traversal. The root is left-aligned, and
+# each node is indented a few spaces more than its parent.
 pub fn SortedMap_print_tree(SortedMap* self, void* print_entry) {
     if self.root == null { return; }
     self.print_tree_node(print_entry, self.root, 0);
@@ -313,8 +442,13 @@ pub fn SortedMap_print_tree(SortedMap* self, void* print_entry) {
 # I create a new `SortedKeys` over this map's keys. Its behavior is undefined if
 # this map is modified during iteration.
 pub fn SortedMap_keys(SortedMap* self) {
-    eprintf("pub fn SortedMap_last_key(SortedMap* self) is unimplemented\n"); # todo
-    exit(1);
+    return SortedKeys__new(self);
+}
+
+# I create a new `SortedValues` over this map's values. Its behavior is
+# undefined if this map is modified during iteration.
+pub fn SortedMap_values(SortedMap* self) {
+    return SortedValues__new(self);
 }
 
 fn SortedMap_drop_tree(SortedMap* self, Node* n) {
