@@ -6,8 +6,52 @@ pub fn main() {
     printf("read %d lines\n", lines.size());
     verify_alignment(lines);
 
-#    aocd_verify_a("%d", );
+    char* ops = lines.pop();
+    int total = 0;
+    int i = 0;
+    ArrayList* numbers = ArrayList__new(lines.size());
+    while ops[i] != null {
+        if ops[i] == ' ' {
+            i = i + 1;
+            again;
+        }
+        int ln = lines.size();
+        while ln > 0 {
+            ln = ln - 1;
+            char* line = lines.get(ln);
+            numbers.push(read_padded_int(line + i));
+        }
+        int ans;
+        if ops[i] == '+' {
+            ans = 0;
+            while numbers.size() > 0 {
+                ans = ans + numbers.pop();
+            }
+        } else {
+            ans = 1;
+            while numbers.size() > 0 {
+                ans = ans * numbers.pop();
+            }
+        }
+        total = total + ans;
+        i = i + 1;
+    }
+    numbers.drop();
+    free(ops);
+
+    printf("Grand Total: %d\n", total);
+    aocd_verify_a("%d", total);
     lines.drop();
+}
+
+fn read_padded_int(char* s) {
+    int i = 0;
+    while !isdigit(*s) { s = s + 1; }
+    while isdigit(*s) {
+        i = i * 10 + (*s - '0');
+        s = s + 1;
+    }
+    return i;
 }
 
 fn verify_alignment(ArrayList* lines) {
