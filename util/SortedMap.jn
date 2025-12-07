@@ -1,0 +1,377 @@
+# I am a sorted map/dict/symbol table, based on a balanced binary search tree.
+pub struct SortedMap {
+    void* cmp,
+    void* drop_key,
+    void* drop_value,
+    Node* root,
+}
+
+# Type of `SortedMap`'s key iterator.
+pub struct SortedKeys {
+    void whosit
+}
+
+# I return a pointer to the next key, or `null` if exhausted.
+pub fn SortedKeys_next() {
+    eprintf("pub fn SortedKeys_next() is unimplemented\n"); # todo
+    exit(1);
+}
+
+struct Node {
+    # BE CAREFUL! 'key' MUST be the first member!!
+    void key,
+    # other keys' position doesn't matter.
+    void value,
+    Node* left,
+    Node* right,
+    int size,
+}
+
+fn Node__new(void key, void value) {
+    Node* n = malloc(sizeof(Node));
+    n.key = key;
+    n.value = value;
+    n.left = null;
+    n.right = null;
+    n.size = 1;
+    return n;
+}
+
+fn Node_size(Node* self) {
+    if self == null { return 0; }
+    return self.size;
+}
+
+fn Node_key(Node* self) {
+    if self == null { return 0; }
+    return self.key;
+}
+
+struct Mut {
+    void value,
+    SortedMap* map,
+    void* cmp,
+}
+
+fn SortedMap_mut(SortedMap* self) {
+    Mut* m = malloc(sizeof(Mut));
+    m.value = null;
+    m.map = self;
+    m.cmp = self.cmp;
+    return m;
+}
+
+fn Mut_mut(Mut* mut) {
+    Mut* m = malloc(sizeof(Mut));
+    m.value = null;
+    m.map = mut.map;
+    m.cmp = mut.cmp;
+    return m;
+}
+
+fn Mut_into_value(Mut* self) {
+    void v = self.value;
+    free(self);
+    return v;
+}
+
+fn Mut_drop_node(Mut* self, Node* n) {
+    if n == null { return; }
+    SortedMap* map = self.map;
+    map.drop_node(n);
+}
+
+fn Mut_put(Mut* mut, Node* curr, Node* to_add) {
+    if curr == null { return to_add; }
+    void* cmp = mut.cmp;
+    int c = cmp(to_add.key, curr.key);
+    if c == 0 {
+        eprintf("Replacing a value with put is unimplemented\n"); # todo
+        exit(1);
+    }
+    if c < 0 { curr.left = mut.put(curr.left, to_add); }
+    else     { curr.right = mut.put(curr.right, to_add); }
+    return mut.balance(curr);
+}
+
+fn Mut_delete(Mut* mut, Node* curr, void key) {
+    if curr == null { return null; }
+    void* cmp = mut.cmp;
+    int c = cmp(key, curr.key);
+    if c == 0 {
+        mut.value = curr.value;
+        curr.value = null;
+        Node* next;
+        if curr.right == null     { next = curr.left; }
+        else if curr.left == null { next = curr.right; }
+        else {
+            # interior node; have to do surgery...
+            Mut* unlink = mut.mut();
+            if Node_size(curr.left) > Node_size(curr.right) {
+                curr.left = unlink.unlink_max(curr.left);
+            } else {
+                curr.right = unlink.unlink_min(curr.right);
+            }
+            next = unlink.into_value();
+            next.left = curr.left;
+            next.right = curr.right;
+        }
+        mut.drop_node(curr);
+        return mut.balance(next);
+    }
+    if c < 0 { curr.left = mut.delete(curr.left, key); }
+    else     { curr.right = mut.delete(curr.right, key); }
+    return mut.balance(curr);
+}
+
+fn Mut_unlink_min(Mut* mut, Node* curr) {
+    if curr.left != null {
+        curr.left = mut.unlink_min(curr.left);
+        return mut.balance(curr);
+    }
+    mut.value = curr;
+    return curr.right;
+}
+
+fn Mut_unlink_max(Mut* mut, Node* curr) {
+    if curr.right != null {
+        curr.right = mut.unlink_max(curr.right);
+        return mut.balance(curr);
+    }
+    mut.value = curr;
+    return curr.left;
+}
+
+fn Mut_balance(Mut* mut, Node* curr) {
+    if curr == null { return null; }
+    int balance = Node_size(curr.left)
+                - Node_size(curr.right);
+    if balance < -1 {
+        curr = mut.rotate_left(curr);
+    } else if balance > 1 {
+        curr = mut.rotate_right(curr);
+    }
+    curr.size = 1
+              + Node_size(curr.left)
+              + Node_size(curr.right);
+    return curr;
+}
+
+fn move_kids(Node* to, Node* from) {
+    to.left = from.left;
+    from.left = null;
+    to.right = from.right;
+    from.right = null;
+    from.size = 1;
+}
+
+fn Mut_rotate_left(Mut* mut, Node* curr) {
+    # unlink right's min
+    Mut* unlink = mut.mut();
+    curr.right = unlink.unlink_min(curr.right);
+    Node* next = unlink.into_value();
+    # replace curr with it
+    move_kids(next, curr);
+    # put curr into left
+    Mut* put = mut.mut();
+    next.left = mut.put(next.left, curr);
+    free(put);
+    return mut.balance(next);
+}
+
+fn Mut_rotate_right(Mut* mut, Node* curr) {
+    # unlink left's max
+    Mut* unlink = mut.mut();
+    curr.left = unlink.unlink_max(curr.left);
+    Node* next = unlink.into_value();
+    # replace curr with it
+    move_kids(next, curr);
+    # put curr into right
+    Mut* put = mut.mut();
+    next.right = mut.put(next.right, curr);
+    free(put);
+    return mut.balance(next);
+}
+
+# I create a new map, using `cmp` to compare keys, with unowned keys and values.
+# Pass `null` to use value comparison, useful with primitives.
+pub fn SortedMap__new(void* cmp) {
+    return SortedMap__new_owned(cmp, null, null);
+}
+
+fn valcmp(void a, void b) { return a - b; }
+
+# I create a new map, using `cmp` to compare keys, with owned keys and values.
+# Pass `null` to use value comparison, useful with primitives. Pass `null` for
+# the drop functions if keys/values aren't owned by the map.
+pub fn SortedMap__new_owned(void* cmp, void* drop_key, void* drop_value) {
+    SortedMap* m = malloc(sizeof(SortedMap));
+    if cmp == null {
+        m.cmp = &valcmp;
+    } else {
+        m.cmp = cmp;
+    }
+    m.drop_key = drop_key;
+    m.drop_value = drop_value;
+    m.root = null;
+    return m;
+}
+
+# I drop the map.
+pub fn SortedMap_drop(SortedMap* self) {
+    if self == null { return; }
+    self.drop_tree(self.root);
+    free(self);
+}
+
+# I return the number of keys in the map.
+pub fn SortedMap_size(SortedMap* self) {
+    Node* root = self.root;
+    if root == null { return 0; }
+    return root.size;
+}
+
+# I associate `value` with `key` in the map, returning its previous associated
+# value, or `null` if none.
+pub fn SortedMap_put(SortedMap* self, void key, void value) {
+    Mut* mut = self.mut();
+    self.root = mut.put(self.root, Node__new(key, value));
+    return mut.into_value();
+}
+
+# I remove `key`, returning its associated value, or `null` if none.
+pub fn SortedMap_delete(SortedMap* self, void key) {
+    Mut* mut = self.mut();
+    self.root = mut.delete(self.root, key);
+    return mut.into_value();
+}
+
+# I return the value associated with `key`, or `null` if none.
+pub fn SortedMap_get(SortedMap* self, void key) {
+    Node* n = self.find_node(self.root, key);
+    if n == null { return null; }
+    return n.value;
+}
+
+# I return `true` if the map contains `key`, otherwise `false`.
+pub fn SortedMap_contains(SortedMap* self, void key) {
+    eprintf("pub fn SortedMap_contains(SortedMap* self, void key) is unimplemented\n"); # todo
+    exit(1);
+}
+
+# I return a pointer to the largest key in the map not greater than `key`, or
+# `null` if none.
+pub fn SortedMap_floor_key(SortedMap* self, void key) {
+    Node* n = self.floor_node(self.root, key);
+    # This should be `&n.key`, but Johann doesn't have a way to take the address
+    # of a struct member. So rely on the fact that `key` is first, and thus a
+    # pointer to a `Node` is also a pointer to its `key`.
+    return n;
+}
+
+# I return a pointer to the smallest key in the map not less than `key`, or
+# `null` if none.
+pub fn SortedMap_ceiling_key(SortedMap* self, void key) {
+    eprintf("pub fn SortedMap_ceiling_key(SortedMap* self, void key) is unimplemented\n"); # todo
+    exit(1);
+}
+
+# I return a pointer to the largest key in the map strictly less than `key`, or
+# `null` if none.
+pub fn SortedMap_lower_key(SortedMap* self, void key) {
+    eprintf("pub fn SortedMap_lower_key(SortedMap* self, void key) is unimplemented\n"); # todo
+    exit(1);
+}
+
+# I return a pointer to the smallest key in the map strictly greater than `key`,
+# or `null` if none.
+pub fn SortedMap_higher_key(SortedMap* self, void key) {
+    eprintf("pub fn SortedMap_higher_key(SortedMap* self, void key) is unimplemented\n"); # todo
+    exit(1);
+}
+
+# I return a pointer to the smallest key in the map.
+pub fn SortedMap_first_key(SortedMap* self) {
+    eprintf("pub fn SortedMap_first_key(SortedMap* self) is unimplemented\n"); # todo
+    exit(1);
+}
+
+# I return a pointer to the largest key in the map.
+pub fn SortedMap_last_key(SortedMap* self) {
+    eprintf("pub fn SortedMap_last_key(SortedMap* self) is unimplemented\n"); # todo
+    exit(1);
+}
+
+# I print the tree in a line-oriented format, using `print_entry` to render
+# each key-value pair, by an in-order traversal. The root left-aligned, and each
+# node is indented a few spaces more than its parent.
+pub fn SortedMap_print_tree(SortedMap* self, void* print_entry) {
+    if self.root == null { return; }
+    self.print_tree_node(print_entry, self.root, 0);
+}
+
+# I create a new `SortedKeys` over this map's keys. Its behavior is undefined if
+# this map is modified during iteration.
+pub fn SortedMap_keys(SortedMap* self) {
+    eprintf("pub fn SortedMap_last_key(SortedMap* self) is unimplemented\n"); # todo
+    exit(1);
+}
+
+fn SortedMap_drop_tree(SortedMap* self, Node* n) {
+    if n == null { return; }
+    self.drop_tree(n.left);
+    self.drop_tree(n.right);
+    self.drop_node(n);
+}
+
+fn SortedMap_drop_node(SortedMap* self, Node* n) {
+    if n == null { return; }
+    void* drop = self.drop_key;
+    if drop != null {
+        drop(n.key);
+    }
+    drop = self.drop_value;
+    if drop != null {
+        drop(n.value);
+    }
+    free(n);
+}
+
+fn SortedMap_find_node(SortedMap* self, Node* curr, void key) {
+    if curr == null { return null; }
+    void* cmp = self.cmp;
+    int c = cmp(key, curr.key);
+    if c == 0 { return curr; }
+    if c < 0 { return self.find_node(curr.left, key); }
+    return self.find_node(curr.right, key);
+}
+
+fn SortedMap_floor_node(SortedMap* self, Node* curr, void key) {
+    if curr == null { return null; }
+    void* cmp = self.cmp;
+    int c = cmp(key, curr.key);
+    if c < 0 {
+        # curr's key is too big, so it's whatever 'left' has, if anything
+        return self.floor_node(curr.left, key);
+    }
+    if c > 0 {
+        # curr's key is suitable, but see if 'right' has a larger one
+        Node* n = self.floor_node(curr.right, key);
+        if n != null {
+            return n; # it did!
+        }
+    }
+    # curr is the floor, equal or not
+    return curr;
+}
+
+fn SortedMap_print_tree_node(SortedMap* self, void* print_entry, Node* n, int depth) {
+    if n == null { return; }
+    self.print_tree_node(print_entry, n.left, depth + 1);
+    char* indent = repeat_str("   ", depth);
+    printf("%s[%d] ", indent, n.size);
+    print_entry(n.key, n.value);
+    puts("");
+    free(indent);
+    self.print_tree_node(print_entry, n.right, depth + 1);
+}
