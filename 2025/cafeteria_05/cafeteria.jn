@@ -15,37 +15,44 @@ fn Range__new(int lo, int hi) {
 }
 
 fn Range_contains(Range* self, int n) {
-    bool ans = n >= self.lo && n <= self.hi;
-    return ans;
+    return n >= self.lo && n <= self.hi;
+}
+
+fn Range_size(Range* self) {
+    return self.hi - self.lo + 1;
 }
 
 pub fn main() {
     char* line;
     SortedMap* ranges = SortedMap__new_owned(null, null, &free);
+    int id_count = 0;
     while !iseof() {
         line = read_line();
         if *line == null {
             free(line);
             done;
         }
-        register_range(ranges, parse_range(line));
+        id_count = id_count + register_range(ranges, parse_range(line));
         free(line);
     }
-    int count = 0;
+    int ing_count = 0;
     while !iseof() {
         line = read_line();
         int id = atoi(line);
         free(line);
         if get_range_for(ranges, id) != null {
-            count = count + 1;
+            ing_count = ing_count + 1;
         }
     }
-    printf("Fresh: %d\n", count);
-    aocd_verify_a("%d", count);
+    printf("Fresh Ingredients: %d\n", ing_count);
+    aocd_verify_a("%d", ing_count);
+    printf("Fresh IDs        : %d\n", id_count);
+    aocd_verify_b("%d", id_count);
     ranges.drop();
 }
 
 fn register_range(SortedMap* ranges, Range* r) {
+    int id_count = 0;
     Range* existing;
 
     # Combine ranges at lo. If an existing range fully contains r, there's
@@ -61,6 +68,7 @@ fn register_range(SortedMap* ranges, Range* r) {
         } else {
             # they overlap, so extend
             r.lo = existing.lo;
+            id_count = id_count - existing.size();
             free(ranges.delete(existing.lo));
         }
     }
@@ -74,11 +82,15 @@ fn register_range(SortedMap* ranges, Range* r) {
         if r.hi < existing.hi {
             r.hi = existing.hi;
         }
+        id_count = id_count - existing.size();
         free(ranges.delete(existing.lo));
     }
 
     # register it!
+    id_count = id_count + r.size();
     ranges.put(r.lo, r);
+
+    return id_count;
 }
 
 # I return the range which might contain `n`, or `null` if none could.
