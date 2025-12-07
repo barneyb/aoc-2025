@@ -1,20 +1,113 @@
-pub fn main() {
-    puts("Hello, cafeteria!");
-    int line_count = 0;
-    int char_count = 0;
-    int line_len = -1;
-    char* fmt = "Input is a grid, %d rows by %d columns!\n";
-    while !iseof() {
-        char* line = read_line();
-        int len = strlen(line);
-        if line_len < 0 { line_len = len; }
-        else if line_len != len {
-            fmt = "Input has %d lines averaging ~%d chars each!\n";
-        }
-        char_count = char_count + len;
-        free(line);
-        line_count = line_count + 1;
+struct Range {
+    int lo,
+    int hi,
+}
+
+fn Range__new(int lo, int hi) {
+    if hi < lo {
+        printf("hi cannot be less than lo; %d-%d is illegal?!\n", lo, hi);
+        exit(1);
     }
-    printf(fmt, line_count, char_count / line_count);
-#    aocd_verify_a("%d", );
+    Range* r = malloc(sizeof(Range));
+    r.lo = lo;
+    r.hi = hi;
+    return r;
+}
+
+fn Range_contains(Range* self, int n) {
+    bool ans = n >= self.lo && n <= self.hi;
+    return ans;
+}
+
+pub fn main() {
+    char* line;
+    SortedMap* ranges = SortedMap__new_owned(null, null, &free);
+    while !iseof() {
+        line = read_line();
+        if *line == null {
+            free(line);
+            done;
+        }
+        register_range(ranges, parse_range(line));
+        free(line);
+    }
+    int count = 0;
+    while !iseof() {
+        line = read_line();
+        int id = atoi(line);
+        free(line);
+        if get_range_for(ranges, id) != null {
+            count = count + 1;
+        }
+    }
+    printf("Fresh: %d\n", count);
+    aocd_verify_a("%d", count);
+    ranges.drop();
+}
+
+fn register_range(SortedMap* ranges, Range* r) {
+    Range* existing;
+
+    # Combine ranges at lo. If an existing range fully contains r, there's
+    # nothing to do. If there is overlap, extend r down to the existing range's
+    # lo, and remove the existing range.
+    while true {
+        existing = get_range_for(ranges, r.lo);
+        if existing == null { done; }
+        if existing.contains(r.hi) {
+            # r is fully contained in existing
+            free(r);
+            return;
+        } else {
+            # they overlap, so extend
+            r.lo = existing.lo;
+            free(ranges.delete(existing.lo));
+        }
+    }
+
+    # Combine ranges at hi. If an existing range overlaps, extend r up to its
+    # hi. Otherwise the existing range is fully contained in r. Either way,
+    # remove the existing range.
+    while true {
+        existing = get_potential_range_for(ranges, r.hi);
+        if existing == null || !r.contains(existing.lo) { done; }
+        if r.hi < existing.hi {
+            r.hi = existing.hi;
+        }
+        free(ranges.delete(existing.lo));
+    }
+
+    # register it!
+    ranges.put(r.lo, r);
+}
+
+# I return the range which might contain `n`, or `null` if none could.
+fn get_potential_range_for(SortedMap* ranges, int n) {
+    int* key = ranges.floor_key(n);
+    if key == null { return null; }
+    return ranges.get(*key);
+}
+
+# I return the range containing `n`, or `null` if none do.
+fn get_range_for(SortedMap* ranges, int n) {
+    Range* r = get_potential_range_for(ranges, n);
+    if r != null && r.contains(n) { return r; }
+    return null;
+}
+
+fn parse_range(char* str) {
+    int lo = read_int(&str);
+    str = str + 1; # dash
+    return Range__new(lo, read_int(&str));
+}
+
+fn read_int(char** str) {
+    int i = 0;
+    char* s = *str;
+    while isdigit(*s) {
+        i = i * 10 + (*s - '0');
+        s = s + 1;
+    }
+    *str =s ;
+    return i;
 }
