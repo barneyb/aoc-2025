@@ -92,6 +92,11 @@ fn verify_alignment(ArrayList* lines) {
             eprintf("Found line with length %d, not %d?!\n", strlen(line), len);
             exit(57);
         }
+        ptr = strchr(line, '0');
+        if ptr != null {
+            eprintf("Found a zero at col %d?!\n", ptr - line + 1);
+            exit(58);
+        }
     }
     free(itr);
 }
