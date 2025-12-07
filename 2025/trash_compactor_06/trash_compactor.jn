@@ -1,0 +1,141 @@
+pub fn main() {
+    ArrayList* lines = ArrayList__new_owned(5, &free);
+    while !iseof() {
+        lines.push(read_line());
+    }
+    printf("read %d lines\n", lines.size());
+    verify_alignment(lines);
+    char* ops = lines.pop();
+
+    int total = part_a(ops, lines);
+    printf("Line Oriented  : %d\n", total);
+    aocd_verify_a("%d", total);
+
+    total = part_b(ops, lines);
+    printf("Column Oriented: %d\n", total);
+    aocd_verify_b("%d", total);
+
+    free(ops);
+    lines.drop();
+}
+
+fn part_a(char* ops, ArrayList* lines) {
+    int total = 0;
+    int line_count = lines.size();
+    ArrayList* numbers = ArrayList__new(line_count);
+    int i = 0;
+    while ops[i] != null {
+        if ops[i] == ' ' {
+            i = i + 1;
+            again;
+        }
+        int ln = 0;
+        while ln < line_count {
+            char* line = lines.get(ln);
+            ln = ln + 1;
+            numbers.push(read_padded_int(line + i));
+        }
+        total = total + execute(ops[i], numbers);
+        i = i + 1;
+    }
+    numbers.drop();
+    return total;
+}
+
+fn execute(char op, ArrayList* numbers) {
+    int ans;
+    if op == '+' {
+        ans = 0;
+        while numbers.size() > 0 {
+            ans = ans + numbers.pop();
+        }
+    } else {
+        ans = 1;
+        while numbers.size() > 0 {
+            ans = ans * numbers.pop();
+        }
+    }
+    return ans;
+}
+
+fn read_padded_int(char* s) {
+    int i = 0;
+    while !isdigit(*s) { s = s + 1; }
+    while isdigit(*s) {
+        i = i * 10 + (*s - '0');
+        s = s + 1;
+    }
+    return i;
+}
+
+fn part_b(char* ops, ArrayList* lines) {
+    int total = 0;
+    int line_count = lines.size();
+    ArrayList* numbers = ArrayList__new(10);
+    int i = strlen(ops);
+    while i > 0 {
+        i = i - 1;
+        int ln = 0;
+        int num = 0;
+        while ln < line_count {
+            char* line = lines.get(ln);
+            ln = ln + 1;
+            char c = line[i];
+            if isdigit(c) {
+                num = num * 10 + (c - '0');
+            }
+        }
+        if num != 0 { numbers.push(num); }
+        if ops[i] == ' ' { again; }
+        total = total + execute(ops[i], numbers);
+    }
+    numbers.drop();
+    return total;
+}
+
+fn verify_alignment(ArrayList* lines) {
+    char* ops = lines.get(lines.size() - 1);
+    if *ops != '*' && *ops != '+' {
+        eprintf("Operator line didn't start with an operator?!\n");
+        exit(54);
+    }
+    int len = strlen(ops);
+    int i = 1;
+    while i < len {
+        char c = ops[i];
+        i = i + 1;
+        if c == ' ' { again; }
+        if c != '*' && c != '+' {
+            eprintf("Found non-operator '%c' at col %d?!\n", c, i);
+            exit(55);
+        }
+        int idx = i - 2;
+        Iter* itr = lines.iter();
+        while true {
+            char** ptr = itr.next();
+            if ptr == null { done; }
+            char* line = *ptr;
+            if line[idx] != ' ' {
+                eprintf("Found non-space '%c' at col %d?!\n", line[idx], idx);
+                exit(56);
+            }
+        }
+        free(itr);
+    }
+    itr = lines.iter();
+    while true {
+        ptr = itr.next();
+        if ptr == null { done; }
+        line = *ptr;
+        if strlen(line) != len {
+            eprintf("Found line with length %d, not %d?!\n", strlen(line), len);
+            exit(57);
+        }
+        ptr = strchr(line, '0');
+        if ptr != null {
+            eprintf("Found a zero at col %d?!\n", ptr - line + 1);
+            exit(58);
+        }
+    }
+    free(itr);
+}
