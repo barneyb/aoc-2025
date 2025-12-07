@@ -1,20 +1,53 @@
 pub fn main() {
-    puts("Hello, trash_compactor!");
-    int line_count = 0;
-    int char_count = 0;
-    int line_len = -1;
-    char* fmt = "Input is a grid, %d rows by %d columns!\n";
+    ArrayList* lines = ArrayList__new_owned(5, &free);
     while !iseof() {
-        char* line = read_line();
-        int len = strlen(line);
-        if line_len < 0 { line_len = len; }
-        else if line_len != len {
-            fmt = "Input has %d lines averaging ~%d chars each!\n";
-        }
-        char_count = char_count + len;
-        free(line);
-        line_count = line_count + 1;
+        lines.push(read_line());
     }
-    printf(fmt, line_count, char_count / line_count);
+    printf("read %d lines\n", lines.size());
+    verify_alignment(lines);
+
 #    aocd_verify_a("%d", );
+    lines.drop();
+}
+
+fn verify_alignment(ArrayList* lines) {
+    char* ops = lines.get(lines.size() - 1);
+    if *ops != '*' && *ops != '+' {
+        eprintf("Operator line didn't start with an operator?!\n");
+        exit(54);
+    }
+    int len = strlen(ops);
+    int i = 1;
+    while i < len {
+        char c = ops[i];
+        i = i + 1;
+        if c == ' ' { again; }
+        if c != '*' && c != '+' {
+            eprintf("Found non-operator '%c' at col %d?!\n", c, i);
+            exit(55);
+        }
+        int idx = i - 2;
+        Iter* itr = lines.iter();
+        while true {
+            char** ptr = itr.next();
+            if ptr == null { done; }
+            char* line = *ptr;
+            if line[idx] != ' ' {
+                eprintf("Found non-space '%c' at col %d?!\n", line[idx], idx);
+                exit(56);
+            }
+        }
+        free(itr);
+    }
+    itr = lines.iter();
+    while true {
+        ptr = itr.next();
+        if ptr == null { done; }
+        line = *ptr;
+        if strlen(line) != len {
+            eprintf("Found line with length %d, not %d?!\n", strlen(line), len);
+            exit(57);
+        }
+    }
+    free(itr);
 }
