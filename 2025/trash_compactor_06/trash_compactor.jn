@@ -5,43 +5,57 @@ pub fn main() {
     }
     printf("read %d lines\n", lines.size());
     verify_alignment(lines);
-
     char* ops = lines.pop();
+
+    int total = part_a(ops, lines);
+    printf("Line Oriented  : %d\n", total);
+    aocd_verify_a("%d", total);
+
+    total = part_b(ops, lines);
+    printf("Column Oriented: %d\n", total);
+    aocd_verify_b("%d", total);
+
+    free(ops);
+    lines.drop();
+}
+
+fn part_a(char* ops, ArrayList* lines) {
     int total = 0;
+    int line_count = lines.size();
+    ArrayList* numbers = ArrayList__new(line_count);
     int i = 0;
-    ArrayList* numbers = ArrayList__new(lines.size());
     while ops[i] != null {
         if ops[i] == ' ' {
             i = i + 1;
             again;
         }
-        int ln = lines.size();
-        while ln > 0 {
-            ln = ln - 1;
+        int ln = 0;
+        while ln < line_count {
             char* line = lines.get(ln);
+            ln = ln + 1;
             numbers.push(read_padded_int(line + i));
         }
-        int ans;
-        if ops[i] == '+' {
-            ans = 0;
-            while numbers.size() > 0 {
-                ans = ans + numbers.pop();
-            }
-        } else {
-            ans = 1;
-            while numbers.size() > 0 {
-                ans = ans * numbers.pop();
-            }
-        }
-        total = total + ans;
+        total = total + execute(ops[i], numbers);
         i = i + 1;
     }
     numbers.drop();
-    free(ops);
+    return total;
+}
 
-    printf("Grand Total: %d\n", total);
-    aocd_verify_a("%d", total);
-    lines.drop();
+fn execute(char op, ArrayList* numbers) {
+    int ans;
+    if op == '+' {
+        ans = 0;
+        while numbers.size() > 0 {
+            ans = ans + numbers.pop();
+        }
+    } else {
+        ans = 1;
+        while numbers.size() > 0 {
+            ans = ans * numbers.pop();
+        }
+    }
+    return ans;
 }
 
 fn read_padded_int(char* s) {
@@ -52,6 +66,31 @@ fn read_padded_int(char* s) {
         s = s + 1;
     }
     return i;
+}
+
+fn part_b(char* ops, ArrayList* lines) {
+    int total = 0;
+    int line_count = lines.size();
+    ArrayList* numbers = ArrayList__new(10);
+    int i = strlen(ops);
+    while i > 0 {
+        i = i - 1;
+        int ln = 0;
+        int num = 0;
+        while ln < line_count {
+            char* line = lines.get(ln);
+            ln = ln + 1;
+            char c = line[i];
+            if isdigit(c) {
+                num = num * 10 + (c - '0');
+            }
+        }
+        if num != 0 { numbers.push(num); }
+        if ops[i] == ' ' { again; }
+        total = total + execute(ops[i], numbers);
+    }
+    numbers.drop();
+    return total;
 }
 
 fn verify_alignment(ArrayList* lines) {
