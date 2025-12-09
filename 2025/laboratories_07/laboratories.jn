@@ -1,0 +1,44 @@
+pub fn main() {
+    int split_count = 0;
+    int* beams = null;
+    int width;
+    while !iseof() {
+        char* line = read_line();
+        if beams == null {
+            width = strlen(line);
+            beams = calloc(width, sizeof(int));
+            int i = strchr(line, 'S') - line;
+            printf("Found 'S' at %d\n", i);
+            beams[i] = 1;
+            free(line);
+            again;
+        }
+        int* next = calloc(width, sizeof(int));
+        i = width;
+        while i > 0 {
+            i = i - 1;
+            if beams[i] == 0 { again; }
+            if line[i] == '^' {
+                next[i-1] = next[i-1] + beams[i];
+                next[i+1] = next[i+1] + beams[i];
+                split_count = split_count + 1;
+            } else {
+                next[i] = next[i] + beams[i];
+            }
+        }
+        free(beams);
+        beams = next;
+        free(line);
+    }
+    printf("Split Count: %d\n", split_count);
+    aocd_verify_a("%d", split_count);
+    int world_count = 0;
+    i = width;
+    while i > 0 {
+        i = i - 1;
+        world_count = world_count + beams[i];
+    }
+    free(beams);
+    printf("World Count: %d\n", world_count);
+    aocd_verify_b("%d", world_count);
+}
