@@ -118,10 +118,10 @@ pub fn main() {
 }
 EOF
 
-touch ex1.txt
-
 make
 git add .
 git commit -am "skeleton for $NAME"
+touch ex1.txt
+git add .
 idea Makefile
 idea "${NAME}.jn"
