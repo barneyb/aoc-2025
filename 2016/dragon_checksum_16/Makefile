@@ -7,8 +7,7 @@ OBJECTS = \
 	$(UTIL)/$(LIB)/aocd.o \
 
 all: $(PROG) input.txt
-	time $(PROG) 272 < input.txt
-	time $(PROG) 35651584 < input.txt
+	time $(PROG) < input.txt
 
 ex1: $(PROG)
 	$(PROG) 2 1
@@ -23,7 +22,3 @@ $(OUT)/$(NAME).s: \
 	${CATPILE}
 
 include ../../makefile.inc
-
-verify:
-	time $(PROG) 272 < input.txt | ../../verify.sh $(YEAR) $(DAY)
-	time $(PROG) 35651584 < input.txt | ../../verify.sh $(YEAR) $(DAY)

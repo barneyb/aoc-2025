@@ -1,14 +1,29 @@
 struct StringBuilder;
 
 pub fn main(int argc, char** argv) {
-    int disk_size = 1;
-    int init;
-    if argc > 1 { disk_size = atoi(argv[1]); }
-    if argc > 2 { init = argv[2]; }
-    if argc <= 2 { init = read_line(); }
-    printf("For input '%s', fill %d-byte disk\n", init, disk_size);
-    char* data = strclone(init);
-    if argc <= 2 { free(init); }
+    if argc == 1 {
+        # the real deal
+        char* init = read_line();
+        char* a = into_checksum(strclone(init), 272);
+        aocd_verify_a("%s", a);
+        free(a);
+        char* b = into_checksum(init, 35651584);
+        aocd_verify_b("%s", b);
+        free(b);
+    } else if argc == 3 {
+        int disk_size = atoi(argv[1]);
+        char* data = argv[2];
+        data = into_checksum(strclone(data), disk_size);
+        printf("  checksum: '%s'\n", data);
+        free(data);
+    } else {
+        eprintf("Expected zero or two arguments\n");
+        exit(1);
+    }
+}
+
+fn into_checksum(char* data, int disk_size) {
+    printf("For input '%s', fill %d-byte disk\n", data, disk_size);
     int len = strlen(data);
     StringBuilder* sb;
     int i;
@@ -48,11 +63,5 @@ pub fn main(int argc, char** argv) {
         data = sb.into_chars();
         if len % 2 == 1 { done; }
     }
-    printf("  checksum: '%s'\n", data);
-    if disk_size == 272 {
-        aocd_verify_a("%s", data);
-    } else if disk_size == 35651584 {
-        aocd_verify_b("%s", data);
-    }
-    free(data);
+    return data;
 }
