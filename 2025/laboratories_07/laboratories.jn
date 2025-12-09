@@ -1,20 +1,36 @@
 pub fn main() {
-    puts("Hello, laboratories!");
-    int line_count = 0;
-    int char_count = 0;
-    int line_len = -1;
-    char* fmt = "Input is a grid, %d rows by %d columns!\n";
+    int split_count = 0;
+    HashMap* beams = null;
     while !iseof() {
         char* line = read_line();
-        int len = strlen(line);
-        if line_len < 0 { line_len = len; }
-        else if line_len != len {
-            fmt = "Input has %d lines averaging ~%d chars each!\n";
+        if beams == null {
+            beams = HashMap__new(null, null);
+            int i = strchr(line, 'S') - line;
+            printf("Found 'S' at %d\n", i);
+            beams.put(i, i);
+            free(line);
+            again;
         }
-        char_count = char_count + len;
+        HashMap* next = HashMap__new(null, null);
+        Keys* keys = beams.keys();
+        while true {
+            int* k = keys.next();
+            if k == null { done; }
+            i = *k;
+            if line[i] == '^' {
+                next.put(i-1, i-1);
+                next.put(i+1, i+1);
+                split_count = split_count + 1;
+            } else {
+                next.put(i, i);
+            }
+        }
+        free(keys);
+        beams.drop();
+        beams = next;
         free(line);
-        line_count = line_count + 1;
     }
-    printf(fmt, line_count, char_count / line_count);
-#    aocd_verify_a("%d", );
+    beams.drop();
+    printf("Split Count: %d\n", split_count);
+    aocd_verify_a("%d", split_count);
 }
