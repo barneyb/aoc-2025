@@ -1,36 +1,44 @@
 pub fn main() {
     int split_count = 0;
-    HashMap* beams = null;
+    int* beams = null;
+    int width;
     while !iseof() {
         char* line = read_line();
         if beams == null {
-            beams = HashMap__new(null, null);
+            width = strlen(line);
+            beams = calloc(width, sizeof(int));
             int i = strchr(line, 'S') - line;
             printf("Found 'S' at %d\n", i);
-            beams.put(i, i);
+            beams[i] = 1;
             free(line);
             again;
         }
-        HashMap* next = HashMap__new(null, null);
-        Keys* keys = beams.keys();
-        while true {
-            int* k = keys.next();
-            if k == null { done; }
-            i = *k;
+        int* next = calloc(width, sizeof(int));
+        i = width;
+        while i > 0 {
+            i = i - 1;
+            if beams[i] == 0 { again; }
             if line[i] == '^' {
-                next.put(i-1, i-1);
-                next.put(i+1, i+1);
+                next[i-1] = next[i-1] + beams[i];
+                next[i+1] = next[i+1] + beams[i];
                 split_count = split_count + 1;
             } else {
-                next.put(i, i);
+                next[i] = next[i] + beams[i];
             }
         }
-        free(keys);
-        beams.drop();
+        free(beams);
         beams = next;
         free(line);
     }
-    beams.drop();
     printf("Split Count: %d\n", split_count);
     aocd_verify_a("%d", split_count);
+    int world_count = 0;
+    i = width;
+    while i > 0 {
+        i = i - 1;
+        world_count = world_count + beams[i];
+    }
+    free(beams);
+    printf("World Count: %d\n", world_count);
+    aocd_verify_b("%d", world_count);
 }
