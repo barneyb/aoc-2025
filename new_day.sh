@@ -124,4 +124,5 @@ git commit -am "skeleton for $NAME"
 touch ex1.txt
 git add .
 idea Makefile
+idea ex1.txt
 idea "${NAME}.jn"
