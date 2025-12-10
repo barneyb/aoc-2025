@@ -1,20 +1,137 @@
-pub fn main() {
-    puts("Hello, playground!");
-    int line_count = 0;
-    int char_count = 0;
-    int line_len = -1;
-    char* fmt = "Input is a grid, %d rows by %d columns!\n";
-    while !iseof() {
-        char* line = read_line();
-        int len = strlen(line);
-        if line_len < 0 { line_len = len; }
-        else if line_len != len {
-            fmt = "Input has %d lines averaging ~%d chars each!\n";
-        }
-        char_count = char_count + len;
-        free(line);
-        line_count = line_count + 1;
+struct Box {
+    int x,
+    int y,
+    int z,
+}
+
+fn Box__new(int x, int y, int z) {
+    Box* b = malloc(sizeof(Box));
+    b.x = x;
+    b.y = y;
+    b.z = z;
+    return b;
+}
+
+fn Box_dist_squared(Box* self, Box* other) {
+    int dx = self.x - other.x;
+    int dy = self.y - other.y;
+    int dz = self.z - other.z;
+    return dx * dx + dy * dy + dz * dz;
+}
+
+struct Lights {
+    int len,
+    Box* a,
+    Box* b,
+}
+
+fn Lights__new(Box* a, Box* b, int len) {
+    Lights* l = malloc(sizeof(Lights));
+    l.a = a;
+    l.b = b;
+    l.len = len;
+    return l;
+}
+
+fn Lights_cmp(Lights* a, Lights* b) {
+    return a.len - b.len;
+}
+
+fn intcmp_rev(int a, int b) { return b - a; }
+
+pub fn main(int argc, char** argv) {
+    HashMap* opts = get_opts(argc, argv);
+    bool dot = opts.contains("--dot");
+    int conn_count = 1000;
+    if opts.contains("-n") {
+        conn_count = atoi(opts.get("-n"));
     }
-    printf(fmt, line_count, char_count / line_count);
-#    aocd_verify_a("%d", );
+    opts.drop();
+
+    # This owns the boxes. Everything else borrows them.
+    ArrayList* boxes = ArrayList__new_owned(conn_count, &free);
+    Graph* project = Graph__new();
+    Lights* ls;
+
+    PQ* pq = PQ__new_owned(conn_count, &Lights_cmp, &free);
+    int known_limit = MAX_INTEGER;
+    int i = 0;
+    while !iseof() {
+        Box* b = read_box();
+        int j = boxes.size();
+        while j > 0 {
+            j = j - 1;
+            Box* o = boxes.get(j);
+            int len = b.dist_squared(o);
+            if len >= known_limit {
+                again;
+            }
+            ls = Lights__new(b, o, len);
+            if pq.size() < conn_count {
+                pq.push(ls);
+            } else {
+                ls = pq.push_pop(ls);
+                known_limit = ls.len;
+                free(ls);
+            }
+        }
+        boxes.push(b);
+        project.add_node(b);
+        i = i + 1;
+    }
+
+    # todo: iterate, instead of consuming?
+    while pq.size() > 0 {
+        ls = pq.pop();
+        project.add_edge(ls.a, ls.b, ls.len);
+        project.add_edge(ls.b, ls.a, ls.len);
+        free(ls);
+    }
+    pq.drop();
+
+    if dot {
+        project.dot(null, null);
+    } else {
+        pq = PQ__new(3, &intcmp_rev);
+        ConnComps* ccs = project.connected_components();
+        while true {
+            ArrayList** ptr = ccs.next();
+            if ptr == null { done; }
+            ArrayList* c = *ptr;
+            pq.force_push(c.size());
+            c.drop();
+            *ptr = null;
+        }
+        ccs.drop();
+
+        # iterate here too!
+        int answer = 1;
+        while pq.size() > 0 {
+            answer = answer * pq.pop();
+        }
+        printf("Largest Three circuits after %d connections: %d\n", conn_count, answer);
+        aocd_verify_a("%d", answer);
+        pq.drop();
+    }
+
+    project.drop();
+    boxes.drop();
+}
+
+fn read_box() {
+    int x = read_int();
+    getchar(); # comma
+    int y = read_int();
+    getchar(); # comma
+    int z = read_int();
+    getchar(); # newline
+    return Box__new(x, y, z);
+}
+
+fn read_int() {
+    int i = 0;
+    while isdigit(peekchar()) {
+        i = i * 10 + (getchar() - '0');
+    }
+    return i;
 }

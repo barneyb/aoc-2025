@@ -6,15 +6,19 @@
 # For an undirected graph, also add edge `v->u` for every edge `u->v` you add.
 #
 # For an unweighted di-graph, use `null` weights.
+#
+# ***NB:*** pointers are an `int` memory address, so can be used interchangeably
+# as node identifiers. At least while Johann's typechecker lets you.
 
 struct ArrayList;
+struct HashMap;
+struct Queue;
 
 # I am a single edge in the graph, from `u` to `v`.
 pub struct Edge {
     int u,
     int v,
-    void weight, # REQUIRED to be a pointer to an owned allocation with no
-                  # owned subdata (which includes the null pointer).
+    void weight,
 }
 
 pub fn Edge_u(Edge* self) { return self.u; }
@@ -36,6 +40,65 @@ fn Edge_drop(Edge* self) {
 fn Edge_drop_owned_weight(Edge* self) {
     free(self.weight);
     free(self);
+}
+
+# I am the type of `connected_components` iterator, returning `ArrayList`s of
+# node ids.
+pub struct ConnComps {
+    Graph* g,
+    ArrayList* ref, # MUST be the second slot
+    Keys* keys,
+    HashMap* visited,
+}
+
+fn ConnComps__new(Graph* g) {
+    ConnComps* cc = malloc(sizeof(ConnComps));
+    cc.g = g;
+    cc.keys = g.nodes();
+    cc.visited = HashMap__new(null, null);
+    cc.ref = null;
+    return cc;
+}
+
+pub fn ConnComps_drop(ConnComps* self) {
+    ArrayList_drop(self.ref);
+    free(self.keys);
+    HashMap_drop(self.visited);
+    free(self);
+}
+
+pub fn ConnComps_next(ConnComps* self) {
+    int* n;
+    HashMap* visited = self.visited;
+    while true {
+        n = Keys_next(self.keys);
+        if n == null { return null; }
+        if visited.contains(*n) { again; }
+        done;
+    }
+    Queue* q = Queue__new();
+    q.push(*n);
+    ArrayList* comp = ArrayList__new(10);
+    self.ref = comp;
+    while q.size() > 0 {
+        int u = q.remove();
+        if visited.put(u, 1) != null { again; }
+        comp.push(u);
+
+        ArrayList* edges = Graph_out_edges(self.g, u);
+        if edges == null { done; }
+        void* itr = ArrayList_iter(edges);
+        while true {
+            Edge** ep = Iter_next(itr);
+            if ep == null { done; }
+            Edge* e = *ep;
+            q.push(e.v);
+        }
+        free(itr);
+    }
+    q.drop();
+    # the ref is always at the second slot
+    return self + sizeof(void*);
 }
 
 # I am a graph.
@@ -104,4 +167,10 @@ pub fn Graph_out_edges(Graph* self, int u) {
 # I return a `Keys` (from `HashMap`) which iterates over the graph's node ids.
 pub fn Graph_nodes(Graph* self) {
     return HashMap_keys(self.edges);
+}
+
+# I return a `ConnComps` which iterates over the graph's connected components,
+# returning each as an `ArrayList` of node ids.
+pub fn Graph_connected_components(Graph* self) {
+    return ConnComps__new(self);
 }

@@ -7,7 +7,7 @@ struct HashMap;
 pub fn get_opts(int argc, char** argv) {
     HashMap* opts = HashMap__new_owned(&strhash, &strcmp, &free, &free);
     int i = 1;
-    char* last_opt;
+    char* last_opt = null;
     char* temp = "-?";
     while i < argc {
         char* a = argv[i];
@@ -28,9 +28,11 @@ pub fn get_opts(int argc, char** argv) {
                 }
             }
         } else {
+            a = strclone(a);
             if last_opt != null {
                 # option value
-                opts.put(last_opt, a);
+                # todo: HashMap drops owned keys on put too aggressively
+                opts.put(strclone(last_opt), a);
                 last_opt = null;
             } else {
                 # rando
