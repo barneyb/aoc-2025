@@ -1,0 +1,71 @@
+# I solve dynamic connectivity _without disconnect_. Sites are `int`s from `0`
+# to `count-1`, as are component ids.
+
+pub struct UnionFind {
+    # parent of `i`
+    int* parent,
+    # rank of subtree at `i`
+    int* rank,
+    # the number of components.
+    int count,
+}
+
+# I create a new `UnionFind` with `site_count` sites.
+pub fn UnionFind__new(int site_count) {
+    UnionFind* uf = malloc(sizeof(UnionFind));
+    int* parent = malloc(site_count * sizeof(int));
+    int i = site_count;
+    while i > 0 {
+        i = i - 1;
+        parent[i] = i;
+    }
+    uf.parent = parent;
+    uf.rank = calloc(site_count, sizeof(int));
+    uf.count = site_count;
+    return uf;
+}
+
+# I drop the `UnionFind`.
+pub fn UnionFind_drop(UnionFind* self) {
+    free(self.parent);
+    free(self.rank);
+    free(self);
+}
+
+# I unify sites `p` and `q`.
+pub fn UnionFind_union(UnionFind* self, int p, int q) {
+    p = self.find(p);
+    q = self.find(q);
+    if p == q { return; }
+
+    int* parent = self.parent;
+    int* rank = self.rank;
+    int rp = rank[p];
+    int rq = rank[q];
+    # put the smaller subtree under the larger
+    if rp < rq {
+        parent[p] = q;
+        rank[q] = rq + 1;
+    } else {
+        parent[q] = p;
+        rank[p] = rp + 1;
+    }
+
+    self.count = self.count - 1;
+}
+
+# I return site `p`'s component identifier.
+pub fn UnionFind_find(UnionFind* self, int p) {
+    int* parent = self.parent;
+    while parent[p] != p {
+        # set `p`'s parent to its grandparent to reduce path length
+        parent[p] = parent[parent[p]];
+        p = parent[p];
+    }
+    return p;
+}
+
+# I return the number of components.
+pub fn UnionFind_count(UnionFind* self) {
+    return self.count;
+}

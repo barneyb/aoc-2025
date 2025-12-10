@@ -1,0 +1,148 @@
+struct Box {
+    int x,
+    int y,
+    int z,
+}
+
+fn Box__new(int x, int y, int z) {
+    Box* b = malloc(sizeof(Box));
+    b.x = x;
+    b.y = y;
+    b.z = z;
+    return b;
+}
+
+fn Box_dist_squared(Box* self, Box* other) {
+    int dx = self.x - other.x;
+    int dy = self.y - other.y;
+    int dz = self.z - other.z;
+    return dx * dx + dy * dy + dz * dz;
+}
+
+struct Lights {
+    int len,
+    int i,
+    int j,
+}
+
+fn Lights__new(int i, int j, int len) {
+    Lights* l = malloc(sizeof(Lights));
+    l.i = i;
+    l.j = j;
+    l.len = len;
+    return l;
+}
+
+fn Lights_cmp(Lights* a, Lights* b) {
+    return a.len - b.len;
+}
+
+fn intcmp_rev(int a, int b) { return b - a; }
+
+fn mem_stats__(bool);
+
+pub fn main(int argc, char** argv) {
+    HashMap* opts = get_opts(argc, argv);
+    int conn_count = 1000;
+    if opts.contains("-n") {
+        conn_count = atoi(opts.get("-n"));
+    }
+    opts.drop();
+
+    # I own the `Box`es.
+    ArrayList* boxes = ArrayList__new_owned(conn_count, &free);
+    # I own the `Lights`.
+    ArrayList* lights = ArrayList__new_owned(conn_count * (conn_count / 2), &free);
+    int i = 0;
+    while !iseof() {
+        Box* b = read_box();
+        int j = boxes.size();
+        while j > 0 {
+            j = j - 1;
+            Box* o = boxes.get(j);
+            lights.push(Lights__new(i, j, b.dist_squared(o)));
+        }
+        boxes.push(b);
+        i = i + 1;
+    }
+    # sort the lights by length
+    lights.sort(&Lights_cmp);
+
+    # from the shortest, connect N
+    UnionFind* uf = UnionFind__new(boxes.size());
+    Graph* project = Graph__new();
+    Lights* ls;
+    int conn = 0;
+    while conn < conn_count {
+        ls = lights.get(conn);
+        uf.union(ls.i, ls.j);
+        project.add_edge(ls.i, ls.j, ls.len);
+        project.add_edge(ls.j, ls.i, ls.len);
+        conn = conn + 1;
+    }
+    printf("Connections made : %d\n", conn);
+
+    # part A is ready!
+    PQ* pq = PQ__new(3, &intcmp_rev);
+    ConnComps* ccs = project.connected_components();
+    while true {
+        ArrayList** ptr = ccs.next();
+        if ptr == null { done; }
+        ArrayList* c = *ptr;
+        pq.force_push(c.size());
+        c.drop();
+    }
+    ccs.drop();
+    int answer = 1;
+    printf("Largest circuits :");
+    while pq.size() > 0 {
+        i = pq.pop();
+        printf(" %d", i);
+        answer = answer * i;
+    }
+    printf("\nMultiply to      : %d\n", answer);
+    aocd_verify_a("%d", answer);
+    pq.drop();
+    project.drop();
+
+    # keep going until there's a single circuit
+    while uf.count() > 1 {
+        ls = lights.get(conn);
+        uf.union(ls.i, ls.j);
+        conn = conn + 1;
+    }
+    printf("Connections made : %d\n", conn);
+    printf("Final connection : %d <-> %d\n", ls.i, ls.j);
+    uf.drop();
+
+    # part B is ready!
+    b = boxes.get(ls.i);
+    printf("                 : (%d, %d, %d)\n", b.x, b.y, b.z);
+    answer = b.x;
+    b = boxes.get(ls.j);
+    printf("                 : (%d, %d, %d)\n", b.x, b.y, b.z);
+    answer = answer * b.x;
+    printf("Multiply X's     : %d\n", answer);
+    aocd_verify_b("%d", answer);
+
+    lights.drop();
+    boxes.drop();
+}
+
+fn read_box() {
+    int x = read_int();
+    getchar(); # comma
+    int y = read_int();
+    getchar(); # comma
+    int z = read_int();
+    getchar(); # newline
+    return Box__new(x, y, z);
+}
+
+fn read_int() {
+    int i = 0;
+    while isdigit(peekchar()) {
+        i = i * 10 + (getchar() - '0');
+    }
+    return i;
+}

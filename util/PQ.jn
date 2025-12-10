@@ -1,0 +1,172 @@
+pub struct PQ {
+    int capacity,
+    int size,
+    void* cmp,
+    void* drop_el,
+    void* heap,
+}
+
+# I create a new PQ with the given capacity, using the give comparator, with
+# unowned elements. Pass a `null` comparator to use value comparison, useful
+# with primitives.
+pub fn PQ__new(int capacity, void* cmp) {
+    return PQ__new_owned(capacity, cmp, null);
+}
+
+fn intcmp(int a, int b) { return a - b; }
+
+# I create a new PQ with the given capacity, using the give comparator, with
+# owned elements. Pass a `null` comparator to use value comparison, useful
+# with primitives.
+pub fn PQ__new_owned(int capacity, void* cmp, void* drop_el) {
+    if cmp == null { cmp = &intcmp; }
+    PQ* pq = malloc(sizeof(PQ));
+    pq.capacity = capacity;
+    pq.size = 0;
+    pq.cmp = cmp;
+    pq.drop_el = drop_el;
+    # waste the zero-th to make the arithmetic simpler
+    pq.heap = malloc(sizeof(void*) * (capacity + 1));
+    return pq;
+}
+
+# I drop the PQ, along with its elements (if owned).
+pub fn PQ_drop(PQ* self) {
+    void* drop_el = self.drop_el;
+    if drop_el != null {
+        void* heap = self.heap;
+        # this loop looks OBOB, but heap is one-indexed
+        int i = self.size;
+        while i > 0 {
+            drop_el(heap[i]);
+            i = i - 1;
+        }
+    }
+    free(self.heap);
+    free(self);
+}
+
+# I return the size of the PQ.
+pub fn PQ_size(PQ* self) {
+    return self.size;
+}
+
+# I push a new element onto the PQ, if capacity is available. Otherwise, panic.
+pub fn PQ_push(PQ* self, void el) {
+    if self.size >= self.capacity {
+        eprintf("Overflowed the PQ w/ %x.\n", el);
+        exit(3);
+    }
+    void* heap = self.heap;
+    self.size = self.size + 1;
+    heap[self.size] = el;
+    self.float(self.size);
+}
+
+# I push the given element onto the PQ, popping off the new max element if
+# needed to stay within capacity. I am equivalent to calling `push` if size is
+# less than capacity, otherwise `push_pop`.
+pub fn PQ_force_push(PQ* self, void el) {
+    if self.size < self.capacity {
+        self.push(el);
+    } else {
+        void p = self.push_pop(el);
+    }
+}
+
+fn PQ_float(PQ* self, int i) {
+    # while below the root
+    while i > 1 {
+        int parent = i / 2;
+        if !self.gt(i, parent) { done; }
+        # swap with parent
+        self.swap(i, parent);
+        i = parent;
+    }
+}
+
+fn PQ_sink(PQ* self, int i) {
+    while true {
+        int j = i * 2;
+        # while above the bottom
+        if j > self.size { done; }
+        # pick the larger child
+        if j < self.size && self.gt(j + 1, j) {
+            j = j + 1;
+        }
+        if self.gt(i, j) { done; }
+        self.swap(i, j);
+        i = j;
+    }
+}
+
+fn PQ_gt(PQ* self, int i, int j) {
+    void* cmp = self.cmp;
+    void* heap = self.heap;
+    return cmp(heap[i], heap[j]) > 0;
+}
+
+fn PQ_swap(PQ* self, int i, int j) {
+    void* arr = self.heap;
+    void t = arr[i];
+    arr[i] = arr[j];
+    arr[j] = t;
+}
+
+# I pop the max element off the PQ and return it, panicking if empty. `Queue`
+# calls this `remove`, not pop, but the combo methods of `PQ` are ungraceful
+# using that name...
+pub fn PQ_pop(PQ* self) {
+    if self.size <= 0 {
+        eprintf("Underflowed the PQ.\n");
+        exit(3);
+    }
+    void* heap = self.heap;
+    void max = heap[1];
+    if self.size == 1 {
+        self.size = 0;
+    } else {
+        self.swap(1, self.size);
+        self.size = self.size - 1;
+        self.sink(1);
+    }
+    return max;
+}
+
+# I return a pointer to the max element on the PQ, or `null` if empty.
+pub fn PQ_peek(PQ* self) {
+    if self.size <= 0 {
+        return null;
+    }
+    # point to the one-th element
+    return self.heap + sizeof(void);
+}
+
+# I push the given element onto the PQ, and then pop off and return the new max
+# element. I am equivalent to a `pop`, a comparison against `el`, and then a
+# `push` of the lesser, but more efficient.
+pub fn PQ_push_pop(PQ* self, void el) {
+    # if empty, a op-no
+    if self.size == 0 { return el; }
+
+    # if el is greater than max, also a no-op
+    void* cmp = self.cmp;
+    void* heap = self.heap;
+    void max = heap[1];
+    if cmp(el, heap[1]) >= 0 {
+        return el;
+    }
+
+    # replace it and sink.
+    heap[1] = el;
+    self.sink(1);
+    return heap[1];
+}
+
+# I pop the max element off the PQ, and push on the given element, returning the
+# prior max. I am equivalent to a `pop` and then a `push`, returning the popped
+# element, but more efficient.
+pub fn PQ_pop_push(PQ* self, void el) {
+    eprintf("Function 'pub fn PQ_pop_push(PQ* self, void el)' is not implemented\n");
+    exit(3);
+}
