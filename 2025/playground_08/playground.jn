@@ -88,9 +88,7 @@ pub fn main(int argc, char** argv) {
     while true {
         ArrayList** ptr = ccs.next();
         if ptr == null { done; }
-        ArrayList* c = *ptr;
-        pq.force_push(c.size());
-        c.drop();
+        pq.force_push(ArrayList_size(*ptr));
     }
     ccs.drop();
     int answer = 1;

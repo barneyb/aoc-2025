@@ -61,13 +61,15 @@ fn ConnComps__new(Graph* g) {
 }
 
 pub fn ConnComps_drop(ConnComps* self) {
-    # don't drop the ref, the caller owns it
+    ArrayList_drop(self.ref);
     free(self.keys);
     HashMap_drop(self.visited);
     free(self);
 }
 
 pub fn ConnComps_next(ConnComps* self) {
+    ArrayList_drop(self.ref);
+    self.ref = null;
     int* n;
     HashMap* visited = self.visited;
     while true {
