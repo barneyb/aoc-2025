@@ -1,20 +1,51 @@
+struct Tile {
+    int x,
+    int y,
+}
+
+fn Tile__new(int x, int y) {
+    Tile* t = malloc(sizeof(Tile));
+    t.x = x;
+    t.y = y;
+    return t;
+}
+
+fn Tile_area(Tile* self, Tile* other) {
+    int dx = abs(self.x - other.x) + 1;
+    int dy = abs(self.y - other.y) + 1;
+    return dx * dy;
+}
+
 pub fn main() {
-    puts("Hello, movie_theater!");
-    int line_count = 0;
-    int char_count = 0;
-    int line_len = -1;
-    char* fmt = "Input is a grid, %d rows by %d columns!\n";
+    ArrayList* tiles = ArrayList__new_owned(10, &free);
+    int best = 0;
     while !iseof() {
-        char* line = read_line();
-        int len = strlen(line);
-        if line_len < 0 { line_len = len; }
-        else if line_len != len {
-            fmt = "Input has %d lines averaging ~%d chars each!\n";
+        Tile* t = read_tile();
+        int i = tiles.size();
+        while i > 0 {
+            i = i - 1;
+            int a = t.area(tiles.get(i));
+            if a > best { best = a; }
         }
-        char_count = char_count + len;
-        free(line);
-        line_count = line_count + 1;
+        tiles.push(t);
     }
-    printf(fmt, line_count, char_count / line_count);
-#    aocd_verify_a("%d", );
+    tiles.drop();
+    printf("Largest Rectangle: %d\n", best);
+    aocd_verify_a("%d", best);
+}
+
+fn read_tile() {
+    int x = read_int();
+    getchar(); # comma
+    int y = read_int();
+    getchar(); # newline
+    return Tile__new(x, y);
+}
+
+fn read_int() {
+    int i = 0;
+    while isdigit(peekchar()) {
+        i = i * 10 + (getchar() - '0');
+    }
+    return i;
 }
