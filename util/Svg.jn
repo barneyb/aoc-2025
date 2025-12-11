@@ -1,0 +1,58 @@
+char Q = '"';
+
+pub struct Svg {
+    int d,
+}
+
+pub fn Svg__new(int width, int height) {
+    Svg* svg = malloc(sizeof(Svg));
+    printf("<svg");
+    # Johann's IO is just _stupid_.
+    printf(" viewBox=%c0 0", Q);
+    printf(" %d %d%c", width, height, Q);
+    svg.attr_str("xmlns", "http://www.w3.org/2000/svg");
+    puts(">");
+    return svg;
+}
+
+pub fn Svg_line(Svg* self, int x1, int y1, int x2, int y2, char* style) {
+    printf("<line");
+    self.attr_int("x1", x1);
+    self.attr_int("y1", y1);
+    self.attr_int("x2", x2);
+    self.attr_int("y2", y2);
+    self.attr_str("style", style);
+    puts(" />");
+}
+
+pub fn Svg_rect(Svg* self, int x, int y, int width, int height, char* style) {
+    printf("<rect");
+    self.attr_int("x", x);
+    self.attr_int("y", y);
+    self.attr_int("width", width);
+    self.attr_int("height", height);
+    self.attr_str("style", style);
+    puts(" />");
+}
+
+pub fn Svg_text(Svg* self, int x, int y, char* style, char* str) {
+    printf("<text");
+    self.attr_int("x", x);
+    self.attr_int("y", y);
+    self.attr_str("style", style);
+    printf(">%s</text>\n", str  );
+}
+
+pub fn Svg_drop(Svg* self) {
+    puts("</svg>");
+    free(self);
+}
+
+fn Svg_attr_int(Svg* self, char* name, int value) {
+    printf(" %s=%c%d%c", name, Q, value, Q);
+}
+
+fn Svg_attr_str(Svg* self, char* name, char* value) {
+    if value == null { return; }
+    printf(" %s=%c%s%c", name, Q, value, Q);
+}

@@ -16,22 +16,224 @@ fn Tile_area(Tile* self, Tile* other) {
     return dx * dy;
 }
 
-pub fn main() {
-    ArrayList* tiles = ArrayList__new_owned(10, &free);
-    int best = 0;
-    while !iseof() {
-        Tile* t = read_tile();
-        int i = tiles.size();
+pub fn main(int argc, char** argv) {
+    HashMap* opts = get_opts(argc, argv);
+    ArrayList* tiles = read_input();
+    bool part_b = !opts.contains("--no-part-b");
+
+    if opts.contains("--svg") {
+        emit_svg(tiles, part_b);
+        tiles.drop();
+        opts.drop();
+        return;
+    }
+
+    int area = largest_rectangle(tiles);
+    printf("Largest Rectangle: %d\n", area);
+    aocd_verify_a("%d", area);
+
+    if part_b {
+        area = largest_redgreen_rectangle(tiles);
+        printf("Largest Colored Rectangle: %d\n", area);
+        aocd_verify_b("%d", area);
+    } else {
+        printf("Skipping part b");
+    }
+
+    tiles.drop();
+    opts.drop();
+}
+
+fn largest_redgreen_rectangle(ArrayList* tiles) {
+    int largest = 0;
+    ArrayList* anchors = find_anchors(tiles);
+    Tile* B = anchors.pop();
+    Tile* A = anchors.pop();
+    anchors.drop();
+    # Identified by browser-inspecting the rendered SVG (at 1/100 scale), which
+    # mapped unambiguously to an input tile (at full-scale).
+    Tile* a = Tile__new(4386, 33943);
+    Tile* b = Tile__new(5664, 67242);
+    int area_a = A.area(a);
+    int area_b = B.area(b);
+    printf("Rect A: (%d, %d) to (%d, %d) w/ area %d\n", A.x, A.y, a.x, a.y, area_a);
+    printf("Rect B: (%d, %d) to (%d, %d) w/ area %d\n", B.x, B.y, b.x, b.y, area_b);
+
+    free(a);
+    free(b);
+    return max(area_a, area_b);
+}
+
+fn find_anchors(ArrayList* tiles) {
+    Tile* prev = tiles.get(0);
+    int i = tiles.size();
+    ArrayList* lines = ArrayList__new(4);
+    while i > 0 {
+        i = i - 1;
+        Tile* t = tiles.get(i);
+        int dx = abs(prev.x - t.x);
+        if dx > 10000 {
+            eprintf("horizontal line from (%d,%d) to (%d,%d) at %d & %d\n", t.x, t.y, prev.x, prev.y, i, i + 1);
+            lines.push(t);
+            lines.push(prev);
+        }
+        prev = t;
+    }
+    if lines.size() != 4 {
+        eprintf("Solver assumes two horizontal 'dividing' lines, but didn't find them\n");
+        exit(5);
+    }
+    # now get A/B
+    Tile* a = lines.pop();
+    Tile* b = lines.pop();
+    Tile* c = lines.pop();
+    Tile* d = lines.pop();
+    if a.x == d.x {
+        if a.x < b.x {
+            eprintf("Solver assumes wormhole opens left, but it doesn't\n");
+            exit(5);
+        }
+        b = d;
+    } else if b.x == c.x {
+        if c.x < d.x {
+            eprintf("Solver assumes wormhole opens left, but it doesn't\n");
+            exit(5);
+        }
+        a = c;
+    } else {
+        eprintf("Solver assumes dividers are separated by a single vertical segment, but aren't\n");
+        exit(5);
+    }
+    # and ensure they're in order
+    if a.y < b.y {
+        lines.push(a);
+        lines.push(b);
+    } else {
+        lines.push(b);
+        lines.push(a);
+    }
+    return lines;
+}
+
+fn emit_svg(ArrayList* tiles, bool part_b) {
+    Svg* svg = Svg__new(1000, 1000);
+    Tile* prev = tiles.get(0);
+    int i = tiles.size();
+    if part_b {
         while i > 0 {
             i = i - 1;
-            int a = t.area(tiles.get(i));
-            if a > best { best = a; }
+            Tile* t = tiles.get(i);
+            svg.line(prev.x / 100, prev.y / 100, t.x / 100, t.y / 100, "stroke:green");
+            prev = t;
         }
-        tiles.push(t);
     }
-    tiles.drop();
-    printf("Largest Rectangle: %d\n", best);
-    aocd_verify_a("%d", best);
+    i = tiles.size();
+    while i > 0 {
+        i = i - 1;
+        t = tiles.get(i);
+        svg.rect(t.x / 100-1, t.y / 100-1, 2, 2, "fill:red");
+        if part_b && i % 25 == 0 {
+            char* s = itoa(i);
+            svg.text(t.x / 100+1, t.y / 100+1, "fill:gray", s);
+            free(s);
+        }
+    }
+
+    if !part_b {
+        ArrayList* corners = find_corners(tiles);
+        Tile* b = corners.pop();
+        svg.text(b.x / 100, b.y / 100, null, "B");
+        Tile* a = corners.pop();
+        svg.text(a.x / 100, a.y / 100, null, "A");
+        Tile* pos = Tile__new(min(a.x, b.x) / 100,
+                              min(a.y, b.y) / 100);
+        Tile* dim = Tile__new(abs(b.x - a.x) / 100,
+                              abs(b.y - a.y) / 100);
+        corners.drop();
+        svg.rect(pos.x, pos.y, dim.x, dim.y, "fill:lightgray;opacity:0.5");
+        s = itoa(a.area(b));
+        svg.text(pos.x + 2, pos.y + dim.y - 2, null, s);
+        free(pos);
+        free(dim);
+        free(s);
+        svg.drop();
+        return;
+    }
+
+    ArrayList* anchors = find_anchors(tiles);
+    # Identified by browser-inspecting the rendered SVG (at 1/100 scale), which
+    # mapped unambiguously to an input tile (at full-scale).
+    a = Tile__new(4386, 33943); # 43, 339
+    b = Tile__new(5664, 67242); # 56, 672
+
+    t = anchors.pop();
+    char* style_limits = "stroke: gray; stroke-width: hairline; stroke-dasharray:5 5;";
+    svg.line(t.x / 100, t.y / 100, t.x / 100, 1000, style_limits);
+    svg.line(t.x / 100, 681, 0, 681, style_limits);
+    char* style_bounds = "stroke:blue; stroke-dasharray:5 5";
+    svg.line(b.x / 100, b.y / 100, 1000, b.y / 100, style_bounds);
+    svg.line(b.x / 100, b.y / 100, b.x / 100, t.y / 100, style_bounds);
+    s = itoa(t.area(b));
+    char* style_area = "fill:blue";
+    svg.text(b.x / 100 + 2, b.y / 100 - 2, style_area, s);
+    free(s);
+
+    t = anchors.pop();
+    svg.line(t.x / 100, t.y / 100, t.x / 100, 0, style_limits);
+    svg.line(t.x / 100, 335, 0, 335, style_limits);
+    svg.line(a.x / 100, a.y / 100, 1000, a.y / 100, style_bounds);
+    svg.line(a.x / 100, a.y / 100, a.x / 100, t.y / 100, style_bounds);
+    s = itoa(t.area(a));
+    svg.text(a.x / 100 + 2, t.y / 100 - 2, style_area, s);
+    free(s);
+
+    free(a);
+    free(b);
+    anchors.drop();
+    svg.drop();
+}
+
+fn largest_rectangle(ArrayList* tiles) {
+    ArrayList* corners = find_corners(tiles);
+    Tile* b = corners.pop();
+    Tile* a = corners.pop();
+    corners.drop();
+    int area = a.area(b);
+    printf("Rect: (%d, %d) to (%d, %d) w/ area %d\n", a.x, a.y, b.x, b.y, area);
+    return area;
+}
+
+fn find_corners(ArrayList* tiles) {
+    int largest = 0;
+    Tile* t1 = null;
+    Tile* t2 = null;
+    int i = tiles.size();
+    while i > 0 {
+        i = i - 1;
+        Tile* t = tiles.get(i);
+        int j = i;
+        while j > 0 {
+            j = j - 1;
+            int a = t.area(tiles.get(j));
+            if a > largest {
+                largest = a;
+                t1 = t;
+                t2 = tiles.get(j);
+            }
+        }
+    }
+    ArrayList* ts = ArrayList__new(2);
+    ts.push(t1);
+    ts.push(t2);
+    return ts;
+}
+
+fn read_input() {
+    ArrayList* tiles = ArrayList__new_owned(10, &free);
+    while !iseof() {
+        tiles.push(read_tile());
+    }
+    return tiles;
 }
 
 fn read_tile() {

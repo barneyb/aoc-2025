@@ -5,15 +5,23 @@ include ../../make_vars.inc
 PROG = $(BIN)/$(NAME)
 OBJECTS = \
 	$(UTIL)/$(LIB)/aocd.o \
+	$(UTIL)/$(LIB)/get_opts.o \
+	$(UTIL)/$(LIB)/Svg.o \
 
 all: $(PROG) input.txt
 	time $(PROG) < input.txt
 
 ex1: $(PROG) ex1.txt
-	$(PROG) < ex1.txt
+	$(PROG) --no-part-b < ex1.txt
+
+floor.a.svg, floor.b.svg: $(PROG) input.txt
+	$(PROG) --svg --no-part-b < input.txt > floor.a.svg
+	$(PROG) --svg             < input.txt > floor.b.svg
 
 $(OUT)/movie_theater.s: \
 		$(UTIL)/$(OUT)/aocd.jnh \
+		$(UTIL)/$(OUT)/get_opts.jnh \
+		$(UTIL)/$(OUT)/Svg.jnh \
 		movie_theater.jn
 	${CATPILE}
 
