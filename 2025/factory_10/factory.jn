@@ -1,20 +1,125 @@
-pub fn main() {
-    puts("Hello, factory!");
-    int line_count = 0;
-    int char_count = 0;
-    int line_len = -1;
-    char* fmt = "Input is a grid, %d rows by %d columns!\n";
-    while !iseof() {
-        char* line = read_line();
-        int len = strlen(line);
-        if line_len < 0 { line_len = len; }
-        else if line_len != len {
-            fmt = "Input has %d lines averaging ~%d chars each!\n";
+struct Machine {
+    int light_count,
+    int light_state,
+    ArrayList* buttons,
+}
+
+fn Machine__new(int light_count, int light_state) {
+    Machine* m = malloc(sizeof(Machine));
+#    printf("machine w/ %d lights: %4x\n", light_count, light_state);
+    m.light_count = light_count;
+    m.light_state = light_state;
+    m.buttons = ArrayList__new(10);
+    return m;
+}
+
+fn Machine_add_button(Machine* self, int btn) {
+#    printf("  btn %4x\n", btn);
+    ArrayList_push(self.buttons, btn);
+}
+
+fn Machine_drop(Machine* self) {
+    ArrayList_drop(self.buttons);
+    free(self);
+}
+
+struct St {
+    int steps,
+    int value,
+}
+
+fn St__new(int steps, int value) {
+    St* s = malloc(sizeof(St));
+    s.steps = steps;
+    s.value = value;
+    return s;
+}
+
+fn Machine_start(Machine* self) {
+    ArrayList* buttons = self.buttons;
+    HashMap* visited = HashMap__new(null, null);
+    Queue* q = Queue__new_owned(&free);
+    q.push(St__new(0, 0));
+    while q.size() > 0 {
+        St* st = q.remove();
+        if visited.put(st.value, 1) == 1 {
+            free(st);
+            again;
         }
-        char_count = char_count + len;
-        free(line);
-        line_count = line_count + 1;
+        int i = buttons.size();
+        while i > 0 {
+            i = i - 1;
+            int btn = buttons.get(i);
+            int next = btn ^ st.value;
+            if next == self.light_state {
+                q.drop();
+                visited.drop();
+                int n = st.steps + 1;
+                free(st);
+                return n;
+            }
+            if !visited.contains(next) {
+                q.push(St__new(st.steps + 1, next));
+            }
+        }
+        free(st);
     }
-    printf(fmt, line_count, char_count / line_count);
-#    aocd_verify_a("%d", );
+    eprintf("failed to start machine %x\n", self.light_state);
+    exit(1);
+}
+
+pub fn main() {
+    ArrayList* machines = ArrayList__new_owned(10, &Machine_drop);
+    while !iseof() {
+        machines.push(read_machine());
+    }
+    int presses = initialize_machines(machines);
+    printf("Total presses: %d\n", presses);
+    aocd_verify_a("%d", presses);
+    machines.drop();
+}
+
+fn initialize_machines(ArrayList* machines) {
+    int n = 0;
+    int i = machines.size();
+    while i > 0 {
+        i = i - 1;
+        Machine* m = machines.get(i);
+        n = n + m.start();
+    }
+    return n;
+}
+
+fn read_machine() {
+    if getchar() != '[' { exit(23); }
+    int lights = 0;
+    int len = 0;
+    while peekchar() != ']' {
+        lights = lights << 1;
+        len = len + 1;
+        if getchar() == '#' {
+            lights = lights + 1;
+        }
+    }
+    Machine* m = Machine__new(len, lights);
+    if getchar() != ']' { exit(24); }
+    if getchar() != ' ' { exit(25); }
+    while getchar() == '(' {
+        int btn = 0;
+        while true {
+            int n = getchar() - '0';
+            n = 1 << (len - n - 1);
+            btn = btn | n;
+            if getchar() != ',' { done; }
+        }
+        m.add_button(btn);
+        if getchar() != ' ' { exit(26); }
+    }
+    # eat rest of line, for now
+    while getchar() != 0xa {}
+    return m;
+}
+
+fn eat_spaces(char* s) {
+    while *s == ' ' { s = s + 1; }
 }
