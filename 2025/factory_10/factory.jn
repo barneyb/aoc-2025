@@ -96,9 +96,113 @@ fn Machine_do_lights(Machine* self) {
 }
 
 fn Machine_do_joltages(Machine* self) {
-    return 1;
+    # todo: sort the buttons by bit count
+    int* js = malloc(self.light_count * sizeof(int));
+    int i = self.light_count;
+    while i > 0 {
+        i = i - 1;
+        js[i] = ArrayList_get(self.joltages, i);
+    }
+    int best = self.do_joltages_internal(
+        self.jbuttons,
+        js,
+        190);
+    free(js);
+    if best < MAX_INTEGER {
+        return best;
+    }
     eprintf("failed to configure machine #%d's joltages\n", self.id);
     exit(1);
+}
+
+fn Machine_do_joltages_internal(
+    Machine* self,
+    ArrayList* buttons,
+    int* goal,
+    int avail
+) {
+    if self.is_zero_vec(goal) { return 0; }
+    if avail == 0 { return MAX_INTEGER; }
+    if buttons.size() == 0 { return MAX_INTEGER; }
+
+    int* btn = buttons.peek();
+    int i = min(avail, self.vec_div(goal, btn));
+
+    # this is our last hope
+    if buttons.size() == 1 {
+        int* next = self.vec_msub(goal, i, btn);
+        if self.is_zero_vec(next) {
+            avail = i;
+        }
+        free(next);
+        return avail;
+    }
+
+    # try every multiple of this level that fits and recurse each one
+    buttons.pop();
+#    printf(" %d repeats, w/ %d more levels and %d avail\n", i, buttons.size(), avail);
+    while i > 0 {
+        next = self.vec_msub(goal, i, btn);
+        int n = self.do_joltages_internal(
+            buttons,
+            next,
+            avail - i);
+        if n < avail - i {
+            avail = n + i;
+        }
+        free(next);
+        i = i - 1;
+    }
+
+    # try without anything from this level
+    n = self.do_joltages_internal(
+        buttons,
+        goal,
+        avail);
+    if n < avail { avail = n; }
+
+    buttons.push(btn);
+    return avail;
+}
+
+# subtract `n` copies of `ys` from `xs`
+fn Machine_vec_msub(Machine* self, int* xs, int n, int* ys) {
+    int bytes = self.light_count * sizeof(int);
+    int* next = malloc(bytes);
+    memcpy(next, xs, bytes);
+    if n == 0 { return next; }
+
+    int i = self.light_count;
+    while i > 0 {
+        i = i - 1;
+        next[i] = next[i] - n * ys[i];
+    }
+    return next;
+}
+
+# return the largest multiplier for `ys` that wouldn't exceed `xs`
+fn Machine_vec_div(Machine* self, int* xs, int* ys) {
+    int quot = MAX_INTEGER;
+    int i = self.light_count;
+    while i > 0 {
+        i = i - 1;
+        if ys[i] != 0 {
+            quot = min(quot, xs[i] / ys[i]);
+        }
+    }
+    if quot == MAX_INTEGER { quot = 0; }
+    return quot;
+}
+
+fn Machine_is_zero_vec(Machine* self, int* vec) {
+    int i = self.light_count;
+    while i > 0 {
+        i = i - 1;
+        if vec[i] != 0 {
+            return false;
+        }
+    }
+    return true;
 }
 
 struct Counts {
@@ -131,7 +235,9 @@ fn configure_machines(ArrayList* machines) {
         i = i - 1;
         Machine* m = machines.get(i);
         cs.light = cs.light + m.do_lights();
-        cs.joltage = cs.joltage + m.do_joltages();
+        int p = m.do_joltages();
+        printf("Machine #%d took %d presses to set joltages\n", m.id, p);
+        cs.joltage = cs.joltage + p;
     }
     return cs;
 }
