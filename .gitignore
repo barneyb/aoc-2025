@@ -3,4 +3,4 @@ target/
 .DS_Store
 input.txt
 *.dot
-*.dot.svg
+*.svg
