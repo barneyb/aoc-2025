@@ -122,7 +122,7 @@ pub fn main(int argc, char** argv) {
         printf("Shortest Path (Portals): %d steps\n", part_one);
         aocd_verify_a("%d", part_one);
 
-        if opts.contains("no-part-two") {
+        if opts.contains("--no-part-two") {
             puts("Skipping part two.");
         } else {
             int part_two = path_length_nesting(m, g);
