@@ -51,28 +51,38 @@ fn largest_redgreen_rectangle(ArrayList* tiles) {
     Tile* A = anchors.pop();
     anchors.drop();
     # Identified by browser-inspecting the rendered SVG (at 1/100 scale), which
-    # mapped unambiguously to an input tile (at full-scale).
+    # mapped unambiguously to an input tile (at full-scale). `b` is correctly
+    # identified below.
     Tile* a = Tile__new(4386, 33943);
-    Tile* b = Tile__new(5664, 67242);
+    Tile* b = find_b(tiles, B);
     int area_a = A.area(a);
     int area_b = B.area(b);
     printf("Rect A: (%d, %d) to (%d, %d) w/ area %d\n", A.x, A.y, a.x, a.y, area_a);
     printf("Rect B: (%d, %d) to (%d, %d) w/ area %d\n", B.x, B.y, b.x, b.y, area_b);
 
     free(a);
-    free(b);
     return max(area_a, area_b);
 }
 
 fn find_anchors(ArrayList* tiles) {
     Tile* prev = tiles.get(0);
+    Tile* t = tiles.get(1);
+    if prev.x < t.x || prev.y > t.y {
+        eprintf("Solver expects tiles are listed clockwise from three o'clock\n");
+        exit(5);
+    }
     int i = tiles.size();
     ArrayList* lines = ArrayList__new(4);
     while i > 0 {
         i = i - 1;
-        Tile* t = tiles.get(i);
+        t = tiles.get(i);
         int dx = abs(prev.x - t.x);
         if dx > 10000 {
+            int halfway = tiles.size() / 2;
+            if i < halfway - 2 || i > halfway + 2 {
+                eprintf("Solver assumes dividers are roughly opposite the first tile\n");
+                exit(5);
+            }
             eprintf("horizontal line from (%d,%d) to (%d,%d) at %d & %d\n", t.x, t.y, prev.x, prev.y, i, i + 1);
             lines.push(t);
             lines.push(prev);
@@ -147,8 +157,8 @@ fn emit_svg(ArrayList* tiles, bool part_b) {
         svg.text(a.x / 100, a.y / 100, null, "A");
         Tile* pos = Tile__new(min(a.x, b.x) / 100,
                               min(a.y, b.y) / 100);
-        Tile* dim = Tile__new(abs(b.x - a.x) / 100,
-                              abs(b.y - a.y) / 100);
+        Tile* dim = Tile__new(abs(b.x - a.x) / 100 + 1,
+                              abs(b.y - a.y) / 100 + 1);
         corners.drop();
         svg.rect(pos.x, pos.y, dim.x, dim.y, "fill:lightgray;opacity:0.5");
         s = itoa(a.area(b));
@@ -162,15 +172,16 @@ fn emit_svg(ArrayList* tiles, bool part_b) {
 
     ArrayList* anchors = find_anchors(tiles);
     # Identified by browser-inspecting the rendered SVG (at 1/100 scale), which
-    # mapped unambiguously to an input tile (at full-scale).
+    # mapped unambiguously to an input tile (at full-scale). `b` is correctly
+    # identified below.
     a = Tile__new(4386, 33943); # 43, 339
-    b = Tile__new(5664, 67242); # 56, 672
 
     t = anchors.pop();
-    char* style_limits = "stroke: gray; stroke-width: hairline; stroke-dasharray:5 5;";
+    b = find_b(tiles, t);
+    char* style_limits = "stroke: gray; stroke-width: hairline; stroke-dasharray:2 3;";
     svg.line(t.x / 100, t.y / 100, t.x / 100, 1000, style_limits);
     svg.line(t.x / 100, 681, 0, 681, style_limits);
-    char* style_bounds = "stroke:blue; stroke-dasharray:5 5";
+    char* style_bounds = "stroke:blue; stroke-dasharray:2 3";
     svg.line(b.x / 100, b.y / 100, 1000, b.y / 100, style_bounds);
     svg.line(b.x / 100, b.y / 100, b.x / 100, t.y / 100, style_bounds);
     s = itoa(t.area(b));
@@ -188,9 +199,47 @@ fn emit_svg(ArrayList* tiles, bool part_b) {
     free(s);
 
     free(a);
-    free(b);
     anchors.drop();
     svg.drop();
+}
+
+fn find_b(ArrayList* tiles, Tile* B) {
+    # First, find a tile (B') which is too far left and get its y. This should
+    # use an index on x, and get the floor B.x.
+    Tile* t;
+    int i = 0;
+    while true {
+        t = tiles.get(i);
+        if t.x < B.x {
+            eprintf("B' is (%d, %d)\n", t.x, t.y);
+            done;
+        }
+        i = i + 1;
+    }
+    int max_y = t.y;
+
+    # Now, go to the other side and find the rightmost tile (b) at or above max
+    # y. This needs an index on y/x, for floor of B.y/B'.x.
+    int min_x = 0;
+    i = tiles.size() / 2;
+    while true {
+        t = tiles.get(i);
+        if t.x < B.x {
+            if t.y >= max_y { done; }
+            min_x = max(min_x, t.x);
+        }
+        i = i - 1;
+    }
+
+    # Finally, reverse direction and find the first tile which satisfies both.
+    while true {
+        t = tiles.get(i);
+        if t.x >= min_x && t.y <= max_y {
+            eprintf("b is (%d, %d)\n", t.x, t.y);
+            return t;
+        }
+        i = i + 1;
+    }
 }
 
 fn largest_rectangle(ArrayList* tiles) {
