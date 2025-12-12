@@ -96,23 +96,54 @@ fn Machine_do_lights(Machine* self) {
 }
 
 fn Machine_do_joltages(Machine* self) {
-    # todo: sort the buttons by bit count
-    int* js = malloc(self.light_count * sizeof(int));
-    int i = self.light_count;
+    int* js = ArrayList_into_array(self.joltages);
+    self.joltages = null;
+
+    ArrayList* buttons = self.jbuttons;
+    int i = buttons.size();
     while i > 0 {
         i = i - 1;
-        js[i] = ArrayList_get(self.joltages, i);
+        int* btn = buttons.get(i);
+        int f = self.vec_div(js, btn);
+        printf("  button %d (%x) fits %d times\n", i, ArrayList_get(self.buttons, i), f);
+        if f == 0 {
+            free(btn);
+            if i == buttons.size() - 1 {
+                buttons.pop();
+            } else {
+                buttons.set(i, buttons.pop());
+            }
+            puts("    removed!");
+        }
     }
-    int best = self.do_joltages_internal(
-        self.jbuttons,
-        js,
-        190);
+    ArrayList* sets = ArrayList__new_owned(self.light_count, &free);
+    int c = 0;
+    while c < self.light_count {
+        if js[c] == 0 { c = c + 1; again; }
+        StringBuilder* sb = StringBuilder__new(self.light_count + 1);
+        i = 0;
+        while i < buttons.size() {
+            btn = buttons.get(i);
+            if btn[c] == 1 {
+                sb.push('a' + i);
+            }
+            i = i + 1;
+        }
+        char* set = sb.into_chars();
+        sets.push(set);
+        if strlen(set) == 1 {
+            printf("  fix on %d: %c = %d.\n", c, set[0], js[c]);
+        } else if sb.length() > 0 {
+            printf("  constraint at %d: %s = %d.\n", c, set, js[c]);
+        }
+        c = c + 1;
+    }
+    sets.drop();
+
     free(js);
-    if best < MAX_INTEGER {
-        return best;
-    }
-    eprintf("failed to configure machine #%d's joltages\n", self.id);
-    exit(1);
+    return 1;
+#    eprintf("failed to configure machine #%d's joltages\n", self.id);
+#    exit(1);
 }
 
 fn Machine_do_joltages_internal(
