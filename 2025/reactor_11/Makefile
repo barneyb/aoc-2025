@@ -13,7 +13,10 @@ all: $(PROG) input.txt
 	time $(PROG) < input.txt
 
 ex1: $(PROG) ex1.txt
-	$(PROG) < ex1.txt
+	$(PROG) --part-a < ex1.txt
+
+ex2: $(PROG) ex2.txt
+	$(PROG) --part-b < ex2.txt
 
 graph: ex1.$(GRAPHVIZ_LAYOUT).svg
 	mv ex1.$(GRAPHVIZ_LAYOUT).svg graph.dot.svg

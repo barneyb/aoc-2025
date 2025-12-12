@@ -1,13 +1,20 @@
-int YOU = 1;
-int OUT = 2;
+int SVR = 1;
+int DAC = 2;
+int FFT = 3;
+int YOU = 4;
+int OUT = 5;
 HashMap ID_TO_NAME = null;
 
 fn label_node(int n) {
     printf("%s", HashMap_get(ID_TO_NAME, n));
     if n > 10 { return; }
     printf(" shape=polygon style=filled");
-    if n == YOU {
+    if n == SVR || n == YOU {
         printf(" fillcolor=lime");
+    } else if n == FFT {
+        printf(" fillcolor=yellow");
+    } else if n == DAC {
+        printf(" fillcolor=yellow");
     } else if n == OUT {
         printf(" fillcolor=pink");
     }
@@ -18,16 +25,24 @@ pub fn main(int argc, char** argv) {
     HashMap* id2name = HashMap__new_owned(null, null, null, &free);
     ID_TO_NAME = id2name;
     Graph* G = Graph__new();
-    G.add_node(YOU); id2name.put(YOU, strclone("YOU"));
-    G.add_node(OUT); id2name.put(OUT, strclone("OUT"));
     read_graph(G);
 
+    int n;
     if opts.contains("--dot") {
         G.dot_reachable(&label_node, null, YOU);
+    } else if opts.contains("--part-a") {
+        n = count_all_paths(G, YOU, OUT);
+        printf("Path Count: %d\n", n);
+    } else if opts.contains("--part-b") {
+        n = count_bad_paths(G, SVR, OUT);
+        printf("Path Count: %d\n", n);
     } else {
-        int n = count_paths(G, YOU, OUT);
+        n = count_all_paths(G, YOU, OUT);
         printf("Path Count: %d\n", n);
         aocd_verify_a("%d", n);
+        n = count_bad_paths(G, SVR, OUT);
+        printf("Path Count: %d\n", n);
+        aocd_verify_b("%d", n);
     }
 
     G.drop();
@@ -35,7 +50,32 @@ pub fn main(int argc, char** argv) {
     opts.drop();
 }
 
-fn count_paths(Graph* G, int start, int end) {
+fn count_bad_paths(Graph* G, int start, int end) {
+    int a = count_all_paths(G, FFT, DAC);
+    int b = count_all_paths(G, DAC, FFT);
+    int c;
+    if b == 0 && a == 0 {
+        printf("DAC and FFT have no shared path?!\n");
+        exit(33);
+    } else if b != 0 && a != 0 {
+        printf("Cycle means 'infinity'?!\n");
+        exit(34);
+    } else if b == 0 {
+        b = a; # reuse
+        a = count_all_paths(G, SVR, FFT);
+        c = count_all_paths(G, DAC, OUT);
+    } else if a == 0 {
+        a = count_all_paths(G, SVR, DAC);
+        # reuse b
+        c = count_all_paths(G, FFT, OUT);
+    } else {
+        printf("There is a bug in jnc.\n");
+        exit(45);
+    }
+    return a * b * c;
+}
+
+fn count_all_paths(Graph* G, int start, int end) {
     int count = 0;
     Queue* Q = Queue__new();
     Q.push(start);
@@ -43,7 +83,7 @@ fn count_paths(Graph* G, int start, int end) {
     counts.put(start, 1);
     while Q.size() > 0 {
         int u = Q.remove();
-        if !counts.contains(u) { again; }
+        # there is some defect in HashMap_delete, so use a zero as "not present"
         int n = counts.get(u);
         counts.put(u, 0);
         ArrayList* edges = G.out_edges(u);
@@ -53,9 +93,9 @@ fn count_paths(Graph* G, int start, int end) {
             i = i - 1;
             Edge* e = edges.get(i);
             int v = e.v();
-            if v == OUT {
+            if v == end {
                 count = count + n;
-            } else if counts.contains(v) {
+            } else if counts.contains(v) && counts.get(v) > 0 { # zero as "not present"
                 counts.put(v, counts.get(v) + n);
             } else {
                 counts.put(v, n);
@@ -70,8 +110,11 @@ fn count_paths(Graph* G, int start, int end) {
 
 fn read_graph(Graph* G) {
     HashMap* name2id = HashMap__new(&strhash, &strcmp);
-    name2id.put("you", YOU);
-    name2id.put("out", OUT);
+    name2id.put("you", YOU); HashMap_put(ID_TO_NAME, YOU, strclone("YOU"));
+    name2id.put("out", OUT); HashMap_put(ID_TO_NAME, OUT, strclone("OUT"));
+    name2id.put("svr", SVR); HashMap_put(ID_TO_NAME, SVR, strclone("SVR"));
+    name2id.put("fft", FFT); HashMap_put(ID_TO_NAME, FFT, strclone("FFT"));
+    name2id.put("dac", DAC); HashMap_put(ID_TO_NAME, DAC, strclone("DAC"));
     while !iseof() {
         int id = read_name_for_id(name2id);
         if getchar() != ':' { exit(12); }
