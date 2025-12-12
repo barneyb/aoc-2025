@@ -1,20 +1,102 @@
-pub fn main() {
-    puts("Hello, reactor!");
-    int line_count = 0;
-    int char_count = 0;
-    int line_len = -1;
-    char* fmt = "Input is a grid, %d rows by %d columns!\n";
-    while !iseof() {
-        char* line = read_line();
-        int len = strlen(line);
-        if line_len < 0 { line_len = len; }
-        else if line_len != len {
-            fmt = "Input has %d lines averaging ~%d chars each!\n";
-        }
-        char_count = char_count + len;
-        free(line);
-        line_count = line_count + 1;
+int YOU = 1;
+int OUT = 2;
+HashMap ID_TO_NAME = null;
+
+fn label_node(int n) {
+    printf("%s", HashMap_get(ID_TO_NAME, n));
+    if n > 10 { return; }
+    printf(" shape=polygon style=filled");
+    if n == YOU {
+        printf(" fillcolor=lime");
+    } else if n == OUT {
+        printf(" fillcolor=pink");
     }
-    printf(fmt, line_count, char_count / line_count);
-#    aocd_verify_a("%d", );
+}
+
+pub fn main(int argc, char** argv) {
+    HashMap* opts = get_opts(argc, argv);
+    HashMap* id2name = HashMap__new_owned(null, null, null, &free);
+    ID_TO_NAME = id2name;
+    Graph* G = Graph__new();
+    G.add_node(YOU); id2name.put(YOU, strclone("YOU"));
+    G.add_node(OUT); id2name.put(OUT, strclone("OUT"));
+    read_graph(G);
+
+    if opts.contains("--dot") {
+        G.dot_reachable(&label_node, null, YOU);
+    } else {
+        int n = count_paths(G, YOU, OUT);
+        printf("Path Count: %d\n", n);
+        aocd_verify_a("%d", n);
+    }
+
+    G.drop();
+    id2name.drop();
+    opts.drop();
+}
+
+fn count_paths(Graph* G, int start, int end) {
+    int count = 0;
+    Queue* Q = Queue__new();
+    Q.push(start);
+    HashMap* counts = HashMap__new(null, null);
+    counts.put(start, 1);
+    while Q.size() > 0 {
+        int u = Q.remove();
+        if !counts.contains(u) { again; }
+        int n = counts.get(u);
+        counts.put(u, 0);
+        ArrayList* edges = G.out_edges(u);
+        if edges == null { again; }
+        int i = edges.size();
+        while i > 0 {
+            i = i - 1;
+            Edge* e = edges.get(i);
+            int v = e.v();
+            if v == OUT {
+                count = count + n;
+            } else if counts.contains(v) {
+                counts.put(v, counts.get(v) + n);
+            } else {
+                counts.put(v, n);
+                Q.push(v);
+            }
+        }
+    }
+    counts.drop();
+    Q.drop();
+    return count;
+}
+
+fn read_graph(Graph* G) {
+    HashMap* name2id = HashMap__new(&strhash, &strcmp);
+    name2id.put("you", YOU);
+    name2id.put("out", OUT);
+    while !iseof() {
+        int id = read_name_for_id(name2id);
+        if getchar() != ':' { exit(12); }
+        while peekchar() != 0xa {
+            if getchar() != ' ' { exit(13); }
+            G.add_edge(id, read_name_for_id(name2id), null);
+        }
+        if getchar() != 0xa { exit(14); }
+    }
+    name2id.drop();
+}
+
+fn read_name_for_id(HashMap* name2id) {
+    char* str = calloc(4, sizeof(char));
+    str[0] = getchar();
+    str[1] = getchar();
+    str[2] = getchar();
+    int id;
+    if !name2id.contains(str) {
+        id = name2id.size() + 10;
+        name2id.put(str, id);
+        HashMap_put(ID_TO_NAME, id, str);
+    } else {
+        id = name2id.get(str);
+        free(str);
+    }
+    return id;
 }
