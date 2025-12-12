@@ -99,6 +99,19 @@ fn Machine_do_joltages(Machine* self) {
     int* js = ArrayList_into_array(self.joltages);
     self.joltages = null;
 
+    # After doing some reading, this is the right line of inquiry. My math is
+    # too weak to describe it correctly, let alone implement all the lower
+    # layers correctly and efficiently. But doing some elimination and then
+    # treating it as an optimization problem in a greatly reduced domain seems
+    # good. Lotta internet folk used various constraint solvers.
+    #
+    # The "Simplex Method" seems to be a specialization that sorta does both
+    # halves, once you get a specifically constructed matrix. Johann doesn't
+    # even support two-dimensional arrays, let alone matrices. And unclear it
+    # it'd work without reals (only ints).
+    #
+    # Problems for another day.
+
     ArrayList* buttons = self.jbuttons;
     int i = buttons.size();
     while i > 0 {
