@@ -5,9 +5,9 @@ include ../../make_vars.inc
 PROG = $(BIN)/$(NAME)
 OBJECTS = \
 	$(UTIL)/$(LIB)/aocd.o \
+	$(UTIL)/$(LIB)/read.o \
 	$(UTIL)/$(LIB)/string.o \
 	$(LIB)/Range.o \
-	$(LIB)/read.o \
 
 all: $(PROG) input.txt
 	time $(PROG) < input.txt
@@ -20,9 +20,9 @@ ex2: $(PROG) ex2.txt
 
 $(OUT)/gift_shop.s: \
 		$(UTIL)/$(OUT)/aocd.jnh \
+		$(UTIL)/$(OUT)/read.jnh \
 		$(UTIL)/$(OUT)/string.jnh \
 		$(OUT)/Range.jnh \
-		$(OUT)/read.jnh \
 		gift_shop.jn
 	${CATPILE}
 
