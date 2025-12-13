@@ -1,13 +1,11 @@
 YEAR = 2025
-DAY = 2
-NAME = gift_shop
+DAY = 12
+NAME = christmas_tree_farm
 include ../../make_vars.inc
 PROG = $(BIN)/$(NAME)
 OBJECTS = \
 	$(UTIL)/$(LIB)/aocd.o \
 	$(UTIL)/$(LIB)/read.o \
-	$(UTIL)/$(LIB)/string.o \
-	$(LIB)/Range.o \
 
 all: $(PROG) input.txt
 	time $(PROG) < input.txt
@@ -15,15 +13,10 @@ all: $(PROG) input.txt
 ex1: $(PROG) ex1.txt
 	$(PROG) < ex1.txt
 
-ex2: $(PROG) ex2.txt
-	$(PROG) < ex2.txt
-
-$(OUT)/gift_shop.s: \
+$(OUT)/christmas_tree_farm.s: \
 		$(UTIL)/$(OUT)/aocd.jnh \
 		$(UTIL)/$(OUT)/read.jnh \
-		$(UTIL)/$(OUT)/string.jnh \
-		$(OUT)/Range.jnh \
-		gift_shop.jn
+		christmas_tree_farm.jn
 	${CATPILE}
 
 include ../../makefile.inc

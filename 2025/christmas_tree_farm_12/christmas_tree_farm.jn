@@ -1,0 +1,29 @@
+pub fn main() {
+    int areas = 0;
+    int huge = 0;
+    while !iseof() {
+        int w = read_int();
+        if !read_if_present('x') {
+            # not an area, skip for now
+            while getchar() != 0xa {}
+            again;
+        }
+        int h = read_int();
+        read_expected(':');
+        int count = 0;
+        int i = 0;
+        while i < 6 {
+            i = i + 1;
+            read_expected(' ');
+            count = count + read_int();
+        }
+        read_expected(0xa);
+        areas = areas + 1;
+        if count * 9 <= w * h {
+            huge = huge + 1;
+        }
+        printf("area %d; %d shapes take %d tiles, max\n", w * h, count, count * 9);
+    }
+    printf("of %d areas, %d are huge\n", areas, huge);
+    aocd_verify_a("%d", huge);
+}
