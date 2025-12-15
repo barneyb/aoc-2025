@@ -1,3 +1,9 @@
+# four expressions of the same fact: 2 bytes of buttons, then 6 of joltages
+int BUTTONS_BITS = 2 * 8;
+int JOLTAGE_BITS = 6 * 8;
+int BUTTONS_MASK = 0xffff_0000_0000_0000;
+int JOLTAGE_MASK = 0x0000_ffff_ffff_ffff;
+
 struct Machine {
     int id,
     int light_count,
@@ -78,10 +84,120 @@ fn Machine_do_lights(Machine* self) {
     exit(1);
 }
 
+fn intcmp_rev(int a, int b) { return b - a; }
+
 fn Machine_do_joltages(Machine* self) {
-    return 1;
+    ArrayList* rows = self.build_rows();
+    self.eliminate(rows);
+    rows.drop();
+    return 1; # todo
     eprintf("failed to configure machine #%d's joltages\n", self.id);
     exit(1);
+}
+
+# Rows are `BUTTONS_BITS` bits for the buttons' wirings, followed by
+# `JOLTAGE_BITS` bits for the target joltage. And augmented matrix, where each
+# row is encoded into a single integer.
+fn Machine_build_rows(Machine* self) {
+    ArrayList* buttons = self.buttons;
+    int button_count = buttons.size();
+    ArrayList* joltages = self.joltages;
+    ArrayList* rows = ArrayList__new(joltages.size());
+    int i = 0;
+    while i < joltages.size() {
+        int shift = self.light_count - i - 1;
+        int btns = 0;
+        int b = 0;
+        while b < button_count {
+            btns = btns << 1;
+            btns = btns | (buttons.get(b) >> shift & 1);
+            b = b + 1;
+        }
+        int row = btns << JOLTAGE_BITS;
+        row = row + joltages.get(i);
+        rows.push(row);
+        i = i + 1;
+    }
+    return rows;
+}
+
+# This isn't quite Gaussian elimination, because Johann only has integers, not
+# rationals (let alone reals). "Add a multiple of one row to another" is instead
+# "subtract a row from another which has at least the same bits set." A much
+# less powerful rule, but still sufficient.
+fn Machine_eliminate(Machine* self, ArrayList* rows) {
+    rows.sort(&intcmp_rev);
+#    self.print_rows(rows);
+    int i = 0;
+    while i < rows.size() {
+        int a = rows.get(i);
+        int btn_bits = rows.get(i) & BUTTONS_MASK;
+        int j = 0;
+        while j < i {
+            int b = rows.get(j);
+            if a == b {
+                # exact dupe
+#                printf("  rows %d and %d are identical\n", j, i);
+                rows.set(j, rows.pop());
+                self.eliminate(rows);
+                return;
+            }
+            int bb = b & BUTTONS_MASK;
+            if (btn_bits & bb) == btn_bits {
+                # a subset
+#                printf("  row %d is a subset of %d\n", i, j);
+                rows.set(j, b - a);
+                self.eliminate(rows);
+                return;
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+}
+
+fn Machine_print_rows(Machine* self, ArrayList* rows) {
+    int i = 0;
+    while i < rows.size() {
+        self.print_row(rows.get(i));
+        i = i + 1;
+    }
+}
+
+fn Machine_print_row(Machine* self, int n) {
+    int button_count = ArrayList_size(self.buttons);
+    int ans = n & JOLTAGE_MASK;
+    int btn_bits = sizeof(int) * 8 - JOLTAGE_BITS;
+    int len = sizeof(int) * 8 + 3; # divider
+    char* str = malloc(len + 1); # null
+    char* s = str + len;
+    *s = null;
+    while s > str {
+        s = s - 1;
+        if s - str == btn_bits + 2 {
+            # about to do the first button column, so divide
+            *s = ' ';
+            s = s - 1;
+            *s = '|';
+            s = s - 1;
+            *s = ' ';
+            s = s - 1;
+        }
+        if (n & 1) == 1 {
+            *s = '1';
+        } else {
+            int i = s - str;
+            # three is for the divider
+            if i >= btn_bits || i < (btn_bits - button_count) {
+                *s = '.';
+            } else {
+                *s = '_';
+            }
+        }
+        n = n >> 1;
+    }
+    printf("%s (%3d)\n", str, ans);
+    free(str);
 }
 
 struct Counts {
@@ -96,11 +212,11 @@ pub fn main() {
     int id = 0;
     while !iseof() {
         id = id + 1;
+        printf("Machine #%d:\n", id);
         Machine* m = read_machine(id);
-        printf("Machine #%d:\n", m.id);
         int l = m.do_lights();
         int j = m.do_joltages();
-        printf("  %d for lights, %d for joltage\n", l, j);
+        printf("  lights : %d\n  joltage: %d\n", l, j);
         cs.light = cs.light + l;
         cs.joltage = cs.joltage + j;
         m.drop();
