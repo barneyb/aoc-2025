@@ -1,16 +1,26 @@
 struct Machine {
+    int id,
     int light_count,
     int light_state,
     ArrayList* buttons,
+    ArrayList* joltages,
 }
 
-fn Machine__new(int light_count, int light_state) {
+fn Machine__new(int id, int light_count, int light_state) {
     Machine* m = malloc(sizeof(Machine));
-#    printf("machine w/ %d lights: %4x\n", light_count, light_state);
+#    printf("machine #%d w/ %d lights: %4x\n", id, light_count, light_state);
+    m.id = id;
     m.light_count = light_count;
     m.light_state = light_state;
     m.buttons = ArrayList__new(10);
+    m.joltages = ArrayList__new(10);
     return m;
+}
+
+fn Machine_drop(Machine* self) {
+    ArrayList_drop(self.buttons);
+    ArrayList_drop(self.joltages);
+    free(self);
 }
 
 fn Machine_add_button(Machine* self, int btn) {
@@ -18,9 +28,9 @@ fn Machine_add_button(Machine* self, int btn) {
     ArrayList_push(self.buttons, btn);
 }
 
-fn Machine_drop(Machine* self) {
-    ArrayList_drop(self.buttons);
-    free(self);
+fn Machine_add_joltage(Machine* self, int j) {
+#    printf("  joltage %d\n", j);
+    ArrayList_push(self.joltages, j);
 }
 
 struct St {
@@ -35,7 +45,7 @@ fn St__new(int steps, int value) {
     return s;
 }
 
-fn Machine_start(Machine* self) {
+fn Machine_do_lights(Machine* self) {
     ArrayList* buttons = self.buttons;
     HashMap* visited = HashMap__new(null, null);
     Queue* q = Queue__new_owned(&free);
@@ -64,33 +74,45 @@ fn Machine_start(Machine* self) {
         }
         free(st);
     }
-    eprintf("failed to start machine %x\n", self.light_state);
+    eprintf("failed to configure machine #%d's lights\n", self.id);
     exit(1);
 }
 
+fn Machine_do_joltages(Machine* self) {
+    return 1;
+    eprintf("failed to configure machine #%d's joltages\n", self.id);
+    exit(1);
+}
+
+struct Counts {
+    int light,
+    int joltage,
+}
+
 pub fn main() {
-    ArrayList* machines = ArrayList__new_owned(10, &Machine_drop);
+    Counts* cs = malloc(sizeof(Counts));
+    cs.light = 0;
+    cs.joltage = 0;
+    int id = 0;
     while !iseof() {
-        machines.push(read_machine());
+        id = id + 1;
+        Machine* m = read_machine(id);
+        printf("Machine #%d:\n", m.id);
+        int l = m.do_lights();
+        int j = m.do_joltages();
+        printf("  %d for lights, %d for joltage\n", l, j);
+        cs.light = cs.light + l;
+        cs.joltage = cs.joltage + j;
+        m.drop();
     }
-    int presses = initialize_machines(machines);
-    printf("Total presses: %d\n", presses);
-    aocd_verify_a("%d", presses);
-    machines.drop();
+    printf("For Lights  : %d\n", cs.light);
+    aocd_verify_a("%d", cs.light);
+    printf("For Joltages: %d\n", cs.joltage);
+#    aocd_verify_b("%d", cs.joltage);
+    free(cs);
 }
 
-fn initialize_machines(ArrayList* machines) {
-    int n = 0;
-    int i = machines.size();
-    while i > 0 {
-        i = i - 1;
-        Machine* m = machines.get(i);
-        n = n + m.start();
-    }
-    return n;
-}
-
-fn read_machine() {
+fn read_machine(int id) {
     if getchar() != '[' { exit(23); }
     int lights = 0;
     int len = 0;
@@ -101,13 +123,14 @@ fn read_machine() {
             lights = lights + 1;
         }
     }
-    Machine* m = Machine__new(len, lights);
+    Machine* m = Machine__new(id, len, lights);
     if getchar() != ']' { exit(24); }
     if getchar() != ' ' { exit(25); }
-    while getchar() == '(' {
+    while peekchar() == '(' {
+        getchar();
         int btn = 0;
         while true {
-            int n = getchar() - '0';
+            int n = read_int();
             n = 1 << (len - n - 1);
             btn = btn | n;
             if getchar() != ',' { done; }
@@ -115,11 +138,22 @@ fn read_machine() {
         m.add_button(btn);
         if getchar() != ' ' { exit(26); }
     }
-    # eat rest of line, for now
-    while getchar() != 0xa {}
+    if getchar() != '{' { exit(27); }
+    while peekchar() != '}' {
+        if peekchar() == ',' {
+            getchar();
+        }
+        m.add_joltage(read_int());
+    }
+    if getchar() != '}' { exit(28); }
+    if getchar() != 0xa { exit(29); }
     return m;
 }
 
-fn eat_spaces(char* s) {
-    while *s == ' ' { s = s + 1; }
+fn read_int() {
+    int i = 0;
+    while isdigit(peekchar()) {
+        i = i * 10 + (getchar() - '0');
+    }
+    return i;
 }
