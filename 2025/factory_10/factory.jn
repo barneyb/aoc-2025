@@ -1,8 +1,9 @@
 # four expressions of the same fact: 2 bytes of buttons, then 6 of joltages
-int BUTTONS_BITS = 2 * 8;
-int JOLTAGE_BITS = 6 * 8;
-int BUTTONS_MASK = 0xffff_0000_0000_0000;
-int JOLTAGE_MASK = 0x0000_ffff_ffff_ffff;
+int BUTTONS_BITS  = 2 * 8;
+int JOLTAGE_BITS  = 6 * 8;
+int BUTTONS_MASK  = 0xffff_0000_0000_0000;
+int JOLTAGE_MASK  = 0x0000_ffff_ffff_ffff;
+int OVERFLOW_MASK = 0x0000_8000_0000_0000;
 
 struct Machine {
     int id,
@@ -88,11 +89,145 @@ fn intcmp_rev(int a, int b) { return b - a; }
 
 fn Machine_do_joltages(Machine* self) {
     ArrayList* rows = self.build_rows();
-    self.eliminate(rows);
+    int presses = self.do_jrows(rows, 0);
     rows.drop();
-    return 1; # todo
-    eprintf("failed to configure machine #%d's joltages\n", self.id);
-    exit(1);
+    return presses;
+}
+
+fn ArrayList_clone(ArrayList* self) { # todo: jstdlib
+    int len = self.size();
+    ArrayList* c = ArrayList__new(len); # todo: ownership?
+    int i = 0;
+    while i < len {
+        c.push(self.get(i));
+        i = i + 1;
+    }
+    return c;
+}
+
+fn Machine_do_jrows(Machine* self, ArrayList* rows, int depth) {
+    printf("do %d jrows at depth %d\n", rows.size(), depth);
+    if !self.eliminate(rows) {
+        puts("something's screwy");
+        return MAX_INTEGER;
+    }
+    puts("eliminated to:");
+    self.print_rows(rows);
+
+#    if depth > 5 { return -1; }
+
+    if self.is_fully_reduced(rows) {
+        int r = rows.size();
+        int sum = 0;
+        while r > 0 {
+            r = r - 1;
+            sum = sum + (rows.get(r) & JOLTAGE_MASK);
+        }
+        return sum;
+    }
+
+    # sanity check
+    int button_count = ArrayList_size(self.buttons);
+    if rows.size() > button_count {
+        printf("Found %d rows, for %d columns?!\n", rows.size(), button_count);
+        self.print_rows(rows);
+        exit(4);
+    }
+
+    int missing = self.missing_row(rows);
+    char* intro = "try";
+    int ans = missing & JOLTAGE_MASK;
+    int best = MAX_INTEGER;
+    while ans >= 0 {
+        ArrayList* next = rows.clone();
+        printf("  %s w/:\n", intro);
+        intro = "then";
+        self.print_row(missing & BUTTONS_MASK | ans);
+        next.push(missing & BUTTONS_MASK | ans);
+        int n = self.do_jrows(next, depth + 1);
+        if n < best {
+            best = n;
+            printf("    new best: %d!\n", best);
+        }
+        next.drop();
+        ans = ans - 1;
+    }
+    if best == MAX_INTEGER {
+        printf("From these rows:\n");
+        self.print_rows(rows);
+        printf("adding this row:\n");
+        self.print_row(missing);
+        printf("failed to reach any solutions?!\n");
+        exit(5);
+    }
+    return best;
+}
+
+# Return whether the "left" of the matrix is the identity matrix in reduced row
+# echelon form (i.e., a unique solution).
+fn Machine_is_fully_reduced(Machine* self, ArrayList* rows) {
+    int button_count = ArrayList_size(self.buttons);
+    if rows.size() != button_count { return false; }
+    int shift = JOLTAGE_BITS + button_count - 1;
+    int bit = 1 << shift;
+    int i = 0;
+    while i < rows.size() {
+        if (rows.get(i) & BUTTONS_MASK) != bit {
+#            printf("GONK! row %d is\n", i);
+#            self.print_row(rows.get(i) & BUTTONS_MASK);
+#            printf("but expected:\n");
+#            self.print_row(bit);
+            return false;
+        }
+        i = i + 1;
+        bit = bit >> 1;
+    }
+    return true;
+}
+
+# Find the leftmost column which doesn't have a leading one.
+fn Machine_missing_row(Machine* self, ArrayList* rows) {
+    int button_count = ArrayList_size(self.buttons);
+    int shift = JOLTAGE_BITS + button_count - 1;
+    int bit = 1 << shift;
+
+    # first, find a column w/out a leading one
+    int i = 0;
+    while i < rows.size() {
+        if (bit & rows.get(i)) > 0 {
+#            printf("  row %d is set\n", i);
+            i = i + 1;
+        } else {
+#            printf("  row %d is unset\n", i);
+            shift = shift - 1;
+            bit = bit >> 1;
+            if (bit & rows.get(i)) == 0 {
+#                printf("    and lacks a one\n");
+                done;
+            }
+            again;
+        }
+    }
+
+    # now find the smallest answer that column influences
+    int smallest = MAX_INTEGER;
+    i = 0;
+    while i < rows.size() {
+        if (bit & rows.get(i)) > 0 {
+            smallest = min(smallest, rows.get(i) & JOLTAGE_MASK);
+        }
+        i = i + 1;
+    }
+    if smallest == MAX_INTEGER {
+        printf("Failed to find a missing row in:\n");
+        self.print_rows(rows);
+        printf("as nothing has this bit set:\n");
+        self.print_row(bit);
+        exit(5);
+    }
+
+    # and that's the missing row
+    return bit | smallest;
 }
 
 # Rows are `BUTTONS_BITS` bits for the buttons' wirings, followed by
@@ -131,29 +266,35 @@ fn Machine_eliminate(Machine* self, ArrayList* rows) {
     int i = 0;
     while i < rows.size() {
         int a = rows.get(i);
+        if a & OVERFLOW_MASK { exit(34); }
         int btn_bits = rows.get(i) & BUTTONS_MASK;
+        int joltage = a & JOLTAGE_MASK;
         int j = 0;
         while j < i {
             int b = rows.get(j);
             if a == b {
                 # exact dupe
-#                printf("  rows %d and %d are identical\n", j, i);
+                printf("  rows %d and %d are identical\n", j, i);
                 rows.set(j, rows.pop());
-                self.eliminate(rows);
-                return;
+                return self.eliminate(rows);
             }
             int bb = b & BUTTONS_MASK;
+            int bj = b & JOLTAGE_MASK;
             if (btn_bits & bb) == btn_bits {
+                if bj < joltage {
+                    printf("it's impossible\n");
+                    return false;
+                }
                 # a subset
-#                printf("  row %d is a subset of %d\n", i, j);
+                printf("  row %d is a subset of %d\n", i, j);
                 rows.set(j, b - a);
-                self.eliminate(rows);
-                return;
+                return self.eliminate(rows);
             }
             j = j + 1;
         }
         i = i + 1;
     }
+    return true;
 }
 
 fn Machine_print_rows(Machine* self, ArrayList* rows) {
@@ -187,7 +328,6 @@ fn Machine_print_row(Machine* self, int n) {
             *s = '1';
         } else {
             int i = s - str;
-            # three is for the divider
             if i >= btn_bits || i < (btn_bits - button_count) {
                 *s = '.';
             } else {
@@ -212,7 +352,7 @@ pub fn main() {
     int id = 0;
     while !iseof() {
         id = id + 1;
-        printf("Machine #%d:\n", id);
+        printf("\nMachine #%d:\n", id);
         Machine* m = read_machine(id);
         int l = m.do_lights();
         int j = m.do_joltages();
