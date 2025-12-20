@@ -107,14 +107,18 @@ fn ArrayList_clone(ArrayList* self) { # todo: jstdlib
 
 fn Machine_do_jrows(Machine* self, ArrayList* rows, int depth) {
     printf("do %d jrows at depth %d\n", rows.size(), depth);
-    if !self.eliminate(rows) {
-        puts("something's screwy");
-        return MAX_INTEGER;
-    }
-    puts("eliminated to:");
+#    if !self.eliminate(rows) {
+#        puts("something's screwy");
+#        return MAX_INTEGER;
+#    }
+#    puts("eliminated to:");
     self.print_rows(rows);
+    return 4;
 
-#    if depth > 5 { return -1; }
+    if depth > 10 {
+        printf("OVER DEEP: %d!!\n", depth);
+        exit(6);
+    }
 
     if self.is_fully_reduced(rows) {
         int r = rows.size();
@@ -134,29 +138,37 @@ fn Machine_do_jrows(Machine* self, ArrayList* rows, int depth) {
         exit(4);
     }
 
-    int missing = self.missing_row(rows);
+    # first, find a column w/out a leading one
+    int bit = self.leftmost_orphan_bit(rows);
+
     char* intro = "try";
-    int ans = missing & JOLTAGE_MASK;
     int best = MAX_INTEGER;
-    while ans >= 0 {
-        ArrayList* next = rows.clone();
-        printf("  %s w/:\n", intro);
-        intro = "then";
-        self.print_row(missing & BUTTONS_MASK | ans);
-        next.push(missing & BUTTONS_MASK | ans);
-        int n = self.do_jrows(next, depth + 1);
-        if n < best {
-            best = n;
-            printf("    new best: %d!\n", best);
+    while bit > JOLTAGE_MASK {
+        # find the smallest answer that column influences
+        int ans = self.min_answer_with_bit(rows, bit);
+        while ans >= 0 {
+            ArrayList* next = rows.clone();
+            printf("  %s w/:\n", intro);
+            intro = "then";
+            self.print_row(bit | ans);
+            next.push(bit | ans);
+            int n = self.do_jrows(next, depth + 1);
+            if n < best {
+                best = n;
+                printf("    new best: %d!\n", best);
+            }
+            next.drop();
+            ans = ans - 1;
         }
-        next.drop();
-        ans = ans - 1;
+        if best < MAX_INTEGER {
+            # progress was made!
+            done;
+        }
+        bit = bit >> 1;
     }
     if best == MAX_INTEGER {
         printf("From these rows:\n");
         self.print_rows(rows);
-        printf("adding this row:\n");
-        self.print_row(missing);
         printf("failed to reach any solutions?!\n");
         exit(5);
     }
@@ -185,8 +197,7 @@ fn Machine_is_fully_reduced(Machine* self, ArrayList* rows) {
     return true;
 }
 
-# Find the leftmost column which doesn't have a leading one.
-fn Machine_missing_row(Machine* self, ArrayList* rows) {
+fn Machine_leftmost_orphan_bit(Machine* self, ArrayList* rows) {
     int button_count = ArrayList_size(self.buttons);
     int shift = JOLTAGE_BITS + button_count - 1;
     int bit = 1 << shift;
@@ -195,23 +206,31 @@ fn Machine_missing_row(Machine* self, ArrayList* rows) {
     int i = 0;
     while i < rows.size() {
         if (bit & rows.get(i)) > 0 {
-#            printf("  row %d is set\n", i);
+#            printf("  row %d has %d set\n", i, shift);
             i = i + 1;
         } else {
-#            printf("  row %d is unset\n", i);
+            printf("  row %d has %d unset\n", i, shift);
             shift = shift - 1;
             bit = bit >> 1;
             if (bit & rows.get(i)) == 0 {
-#                printf("    and lacks a one\n");
+                printf("    nor %d\n", shift);
                 done;
             }
             again;
         }
     }
+    if (bit & rows.get(rows.size() - 1)) > 0 {
+        printf("  final row has %d set\n", shift);
+        shift = shift - 1;
+        bit = bit >> 1;
+    }
+    return bit;
+}
 
-    # now find the smallest answer that column influences
+fn Machine_min_answer_with_bit(Machine* self, ArrayList* rows, int bit) {
+    # First, find the smallest answer that bit influences.
     int smallest = MAX_INTEGER;
-    i = 0;
+    int i = 0;
     while i < rows.size() {
         if (bit & rows.get(i)) > 0 {
             smallest = min(smallest, rows.get(i) & JOLTAGE_MASK);
@@ -219,15 +238,14 @@ fn Machine_missing_row(Machine* self, ArrayList* rows) {
         i = i + 1;
     }
     if smallest == MAX_INTEGER {
-        printf("Failed to find a missing row in:\n");
+        printf("Failed to find a row in:\n");
         self.print_rows(rows);
-        printf("as nothing has this bit set:\n");
+        printf("with this bit set:\n");
         self.print_row(bit);
         exit(5);
     }
 
-    # and that's the missing row
-    return bit | smallest;
+    return smallest;
 }
 
 # Rows are `BUTTONS_BITS` bits for the buttons' wirings, followed by
@@ -262,6 +280,7 @@ fn Machine_build_rows(Machine* self) {
 # less powerful rule, but still sufficient.
 fn Machine_eliminate(Machine* self, ArrayList* rows) {
     rows.sort(&intcmp_rev);
+#    puts("");
 #    self.print_rows(rows);
     int i = 0;
     while i < rows.size() {
@@ -305,14 +324,15 @@ fn Machine_print_rows(Machine* self, ArrayList* rows) {
     }
 }
 
-fn Machine_print_row(Machine* self, int n) {
+fn Machine_print_row(Machine* self, int row) {
     int button_count = ArrayList_size(self.buttons);
-    int ans = n & JOLTAGE_MASK;
+    int ans = row & JOLTAGE_MASK;
     int btn_bits = sizeof(int) * 8 - JOLTAGE_BITS;
     int len = sizeof(int) * 8 + 3; # divider
     char* str = malloc(len + 1); # null
     char* s = str + len;
     *s = null;
+    int n = row;
     while s > str {
         s = s - 1;
         if s - str == btn_bits + 2 {
@@ -336,7 +356,7 @@ fn Machine_print_row(Machine* self, int n) {
         }
         n = n >> 1;
     }
-    printf("%s (%3d)\n", str, ans);
+    printf("%s (%3d : %018x)\n", str, ans, row);
     free(str);
 }
 
@@ -344,6 +364,27 @@ struct Counts {
     int light,
     int joltage,
 }
+
+#pub fn main() {
+#    Machine* m = read_machine(1);
+#    ArrayList* rows = ArrayList__new(16);
+#    rows.push(0x183b000000000000);
+#    rows.push(0x147900000000003b);
+#    rows.push(0x14360000000000ea);
+#    rows.push(0x100e000000000095);
+#    rows.push(0x83f0000000000e8);
+#    rows.push(0x480000000000011);
+#    rows.push(0x47d0000000000ea);
+#    rows.push(0x2a1000000000053);
+#    rows.push(0x28d00000000008e);
+#    rows.push(0x100000000000043);
+#    rows.push(0xf1000000000030);
+#    m.print_rows(rows);
+#    puts("try w/");
+#    m.print_row(m.missing_row(rows));
+#    rows.drop();
+#    m.drop();
+#}
 
 pub fn main() {
     Counts* cs = malloc(sizeof(Counts));
