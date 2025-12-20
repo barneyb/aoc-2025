@@ -3,8 +3,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
@@ -31,25 +31,29 @@ public class Factory {
         System.out.printf("Part A (%d ms): %d %n", (end - start) / 1_000_000, presses);
     }
 
-    private record Machine(int lights,
-                           List<Integer> buttons,
+    private record Machine(List<Integer> lights,
+                           List<List<Integer>> buttons,
                            List<Integer> joltages) {
 
         public int do_lights() {
-            record St(int lights, int steps) {}
+            record St(List<Integer> lights, int steps) {}
             Queue<St> q = new ArrayDeque<>();
-            Set<Integer> visited = new HashSet<>();
-            q.add(new St(0, 0));
+            Set<List<Integer>> visited = new HashSet<>();
+            q.add(new St(lights_off(), 0));
             while (!q.isEmpty()) {
                 St st = q.remove();
                 if (!visited.add(st.lights)) continue;
-                if (st.lights == lights) return st.steps;
+                if (lights.equals(st.lights)) return st.steps;
                 buttons.stream()
-                        .map(b -> st.lights ^ b)
+                        .map(b -> xor(st.lights, b))
                         .filter(not(visited::contains))
                         .forEach(b -> q.add(new St(b, st.steps + 1)));
             }
             throw new NoSuchElementException("Didn't find a way to do the lights?!");
+        }
+
+        private List<Integer> lights_off() {
+            return lights.stream().map(n -> 0).toList();
         }
 
     }
@@ -65,43 +69,41 @@ public class Factory {
         }
 
         Machine machine() {
-            return new Machine(lights(),
-                               buttons(),
+            List<Integer> ls = lights();
+            return new Machine(ls,
+                               buttons(ls.size()),
                                joltages());
         }
 
-        int lights() {
-            int lights = 0;
+        List<Integer> lights() {
             consume('[');
-            Deque<Character> stack = new ArrayDeque<>();
+            List<Integer> lights = new ArrayList<>();
             while (peek() != ']') {
-                stack.push(read());
-            }
-            while (!stack.isEmpty()) {
-                lights <<= 1;
-                if (stack.pop() == '#') lights++;
+                lights.add(read() == '#' ? 1 : 0);
             }
             consume(']');
             consume(' ');
             return lights;
         }
 
-        List<Integer> buttons() {
-            List<Integer> btns = new ArrayList<>();
-            while (peek() == '(') btns.add(button());
+        List<List<Integer>> buttons(int len) {
+            List<List<Integer>> btns = new ArrayList<>();
+            while (peek() == '(') btns.add(button(len));
             return btns;
         }
 
-        private int button() {
-            int b = 0;
+        private List<Integer> button(int len) {
+            List<Integer> b = new ArrayList<>(len);
             consume('(');
             while (Character.isDigit(peek())) {
                 int v = num();
-                b |= 1 << v;
+                while (b.size() < v) b.add(0);
+                b.add(1);
                 if (peek() == ',') consume(',');
             }
             consume(')');
             consume(' ');
+            while (b.size() < len) b.add(0);
             return b;
         }
 
@@ -137,6 +139,16 @@ public class Factory {
             if (read() != c) throw new RuntimeException("Didn't get a " + c);
         }
 
+    }
+
+    private static List<Integer> xor(List<Integer> a, List<Integer> b) {
+        assert a.size() == b.size();
+        Iterator<Integer> itr = b.iterator();
+        List<Integer> result = a.stream()
+                .map(v -> (v + itr.next()) % 2)
+                .toList();
+        assert !itr.hasNext();
+        return result;
     }
 
 }
