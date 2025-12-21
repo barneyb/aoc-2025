@@ -1,9 +1,34 @@
+struct Press {
+    # how many buttons it takes
+    char* label,
+    int count,
+    int* jolts,
+    # aggregate parity
+    int parity,
+}
+
+fn Press__new(char* label, int count, int* jolts, int parity) {
+    Press* p = malloc(sizeof(Press));
+    p.label = label;
+    p.count = count;
+    p.jolts = jolts;
+    p.parity = parity;
+    return p;
+}
+
+fn Press_drop(Press* self) {
+    free(self.label);
+    free(self.jolts);
+    free(self);
+}
+
 struct Machine {
     int id,
     int light_count,
     int light_state,
     ArrayList* buttons,
-    ArrayList* joltages,
+    ArrayList* presses,
+    int* joltages,
 }
 
 fn Machine__new(int id, int light_count, int light_state) {
@@ -13,24 +38,143 @@ fn Machine__new(int id, int light_count, int light_state) {
     m.light_count = light_count;
     m.light_state = light_state;
     m.buttons = ArrayList__new(10);
-    m.joltages = ArrayList__new(10);
+    m.presses = ArrayList__new_owned(10, &Press_drop);
+    # this is pointless and wasteful, but makes the counts sensical
+    ArrayList_push(m.presses, Press__new(strclone(""),
+                                         0,
+                                         calloc(light_count, sizeof(int)),
+                                         0));
     return m;
 }
 
 fn Machine_drop(Machine* self) {
     ArrayList_drop(self.buttons);
-    ArrayList_drop(self.joltages);
+    ArrayList_drop(self.presses);
+    free(self.joltages);
     free(self);
 }
 
 fn Machine_add_button(Machine* self, int btn) {
 #    printf("  btn %4x\n", btn);
+    char c = 'a' + ArrayList_size(self.buttons);
     ArrayList_push(self.buttons, btn);
+    int parity = btn;
+    int* arr = malloc(self.light_count * sizeof(int));
+    int i = self.light_count;
+    while i > 0 {
+        i = i - 1;
+        arr[i] = btn & 0x1;
+        btn = btn >> 1;
+    }
+#    printf("       %c: ", c);
+#    i = 0;
+#    while i < self.light_count {
+#        printf(" %3d", arr[i]);
+#        i = i + 1;
+#    }
+#    puts("");
+    ArrayList* old = self.presses;
+    # room for the null that will be added
+    ArrayList* new_presses = ArrayList__new(old.size() + 1);
+    i = old.size();
+    while i > 0 {
+        i = i - 1;
+        Press* o = old.get(i);
+        StringBuilder* sb = StringBuilder__new(16);
+        sb.push_str(o.label);
+        sb.push(c);
+        new_presses.push(Press__new(sb.into_chars(),
+                                    o.count + 1,
+                                    self.vec_sum(o.jolts, arr),
+                                    o.parity ^ parity));
+    }
+    free(arr);
+    Press* parr = new_presses.into_array();
+    ArrayList_push_all(self.presses, parr);
+    free(parr);
 }
 
-fn Machine_add_joltage(Machine* self, int j) {
-#    printf("  joltage %d\n", j);
-    ArrayList_push(self.joltages, j);
+fn Machine_set_joltages(Machine* self, int* joltages) {
+    self.joltages = joltages;
+}
+
+fn Machine_vec_mult(Machine* self, int* u, int s) {
+    int i = self.light_count;
+    int* product = malloc(i * sizeof(int));
+    while i > 0 {
+        i = i - 1;
+        product[i] = u[i] * s;
+    }
+    return product;
+}
+
+fn Machine_print_vec(Machine* self, int* u) {
+    int i = 0;
+    while i < self.light_count {
+        printf("%4d", u[i]);
+        i = i + 1;
+    }
+}
+
+fn Machine_vec_halve(Machine* self, int* u) {
+    int i = self.light_count;
+    int* half = malloc(i * sizeof(int));
+    while i > 0 {
+        i = i - 1;
+        half[i] = u[i] / 2;
+    }
+    return half;
+}
+
+fn Machine_vec_sum(Machine* self, int* u, int* v) {
+    int i = self.light_count;
+    int* sum = malloc(i * sizeof(int));
+    while i > 0 {
+        i = i - 1;
+        sum[i] = u[i] + v[i];
+    }
+    return sum;
+}
+
+fn Machine_vec_max(Machine* self, int* u) {
+    int i = self.light_count;
+    int m = MIN_INTEGER;
+    while i > 0 {
+        i = i - 1;
+        if u[i] > m { m = u[i]; }
+    }
+    return m;
+}
+
+fn Machine_is_vec_zero(Machine* self, int* u) {
+    int i = self.light_count;
+    while i > 0 {
+        i = i - 1;
+        if u[i] != 0 { return false; }
+    }
+    return true;
+}
+
+fn Machine_is_any_negative(Machine* self, int* u) {
+    int i = self.light_count;
+    while i > 0 {
+        i = i - 1;
+        if u[i] < 0 { return true; }
+    }
+    return false;
+}
+
+fn Machine_parity_of(Machine* self, int* u) {
+    int i = 0;
+    int p = 0;
+    while i < self.light_count {
+        p = p << 1;
+        if u[i] % 2 == 1 {
+            p = p | 1;
+        }
+        i = i + 1;
+    }
+    return p;
 }
 
 struct St {
@@ -79,9 +223,73 @@ fn Machine_do_lights(Machine* self) {
 }
 
 fn Machine_do_joltages(Machine* self) {
-    return 1;
-    eprintf("failed to configure machine #%d's joltages\n", self.id);
-    exit(1);
+    HashMap* parity_to_presses = HashMap__new_owned(null, null, null, &ArrayList_drop);
+    ArrayList* presses = self.presses;
+    int i = presses.size();
+    while i > 0 {
+        i = i - 1;
+        Press* p = presses.get(i);
+        if !parity_to_presses.contains(p.parity) {
+            parity_to_presses.put(p.parity, ArrayList__new(10));
+        }
+        ArrayList_push(parity_to_presses.get(p.parity), p);
+    }
+    int count = self.do_jolt_internal(parity_to_presses, self.joltages, 0);
+    parity_to_presses.drop();
+    return count;
+}
+
+# semaphore for "impossible", but with room to grow up the tree.
+int LARGE_INTEGER = 1 << 32;
+
+fn Machine_do_jolt_internal(Machine* self,
+                            HashMap* parity_to_presses,
+                            int* jolts,
+                            int depth) {
+    if self.is_vec_zero(jolts) {
+        # done!
+        return 0;
+    } else if self.is_any_negative(jolts) {
+        # impossible!
+        return LARGE_INTEGER;
+    }
+    int parity = self.parity_of(jolts);
+    ArrayList* presses = parity_to_presses.get(parity);
+    if presses == null {
+        # can't move forward
+        return LARGE_INTEGER;
+    }
+    int best = LARGE_INTEGER;
+    int i = presses.size();
+    while i > 0 {
+        i = i - 1;
+        Press* press = presses.get(i);
+        int* to_sub = self.vec_mult(press.jolts, -1);
+        int* remaining = self.vec_sum(jolts, to_sub);
+        free(to_sub);
+#        if self.parity_of(remaining) != 0 {
+#            eprintf("got non-even remainder: \n");
+#            exit(3);
+#        }
+        int* next = self.vec_halve(remaining);
+        free(remaining);
+        int p = self.do_jolt_internal(
+            parity_to_presses,
+            next,
+            depth + 1);
+#        if p < self.vec_max(next) {
+#            printf("%d is less than %d, the max of ", p, self.vec_max(next));
+#            self.print_vec(next);
+#            puts("");
+#            exit(45);
+#        }
+        free(next);
+        p = p * 2 + press.count;
+        if p < best {
+            best = p;
+        }
+    }
+    return best;
 }
 
 struct Counts {
@@ -97,10 +305,10 @@ pub fn main() {
     while !iseof() {
         id = id + 1;
         Machine* m = read_machine(id);
-        printf("Machine #%d:\n", m.id);
+#        printf("Machine #%d:\n", m.id);
         int l = m.do_lights();
         int j = m.do_joltages();
-        printf("  %d for lights, %d for joltage\n", l, j);
+#        printf("  %d for lights, %d for joltage\n", l, j);
         cs.light = cs.light + l;
         cs.joltage = cs.joltage + j;
         m.drop();
@@ -108,7 +316,7 @@ pub fn main() {
     printf("For Lights  : %d\n", cs.light);
     aocd_verify_a("%d", cs.light);
     printf("For Joltages: %d\n", cs.joltage);
-#    aocd_verify_b("%d", cs.joltage);
+    aocd_verify_b("%d", cs.joltage);
     free(cs);
 }
 
@@ -139,12 +347,14 @@ fn read_machine(int id) {
         if getchar() != ' ' { exit(26); }
     }
     if getchar() != '{' { exit(27); }
+    ArrayList* joltages = ArrayList__new(len + 1);
     while peekchar() != '}' {
         if peekchar() == ',' {
             getchar();
         }
-        m.add_joltage(read_int());
+        joltages.push(read_int());
     }
+    m.set_joltages(joltages.into_array());
     if getchar() != '}' { exit(28); }
     if getchar() != 0xa { exit(29); }
     return m;
