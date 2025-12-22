@@ -384,8 +384,8 @@ pub fn SortedMap_get(SortedMap* self, void key) {
 
 # I return `true` if the map contains `key`, otherwise `false`.
 pub fn SortedMap_contains(SortedMap* self, void key) {
-    eprintf("pub fn SortedMap_contains(SortedMap* self, void key) is unimplemented\n"); # todo
-    exit(1);
+    Node* n = self.find_node(self.root, key);
+    return n != null;
 }
 
 # I return a pointer to the largest key in the map not greater than `key`, or
