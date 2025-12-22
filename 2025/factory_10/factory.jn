@@ -164,6 +164,21 @@ fn Machine_is_any_negative(Machine* self, int* u) {
     return false;
 }
 
+fn Machine_jolt_key(Machine* self, int* u) {
+    int i = self.light_count;
+    StringBuilder* sb =  StringBuilder__new(i);
+    while i > 0 {
+        i = i - 1;
+        int n = u[i];
+        while n > 90 {
+            sb.push('!');
+            n = n - 90;
+        }
+        sb.push('#' + n);
+    }
+    return sb.into_chars();
+}
+
 fn Machine_parity_of(Machine* self, int* u) {
     int i = 0;
     int p = 0;
@@ -224,6 +239,7 @@ fn Machine_do_lights(Machine* self) {
 
 fn Machine_do_joltages(Machine* self) {
     HashMap* parity_to_presses = HashMap__new_owned(null, null, null, &ArrayList_drop);
+    HashMap* jolts_to_best = HashMap__new_owned(&strhash, &strcmp, &free, null);
     ArrayList* presses = self.presses;
     int i = presses.size();
     while i > 0 {
@@ -234,7 +250,8 @@ fn Machine_do_joltages(Machine* self) {
         }
         ArrayList_push(parity_to_presses.get(p.parity), p);
     }
-    int count = self.do_jolt_internal(parity_to_presses, self.joltages, 0);
+    int count = self.do_jolt_internal(parity_to_presses, jolts_to_best, self.joltages, 0);
+    jolts_to_best.drop();
     parity_to_presses.drop();
     return count;
 }
@@ -244,19 +261,28 @@ int LARGE_INTEGER = 1 << 32;
 
 fn Machine_do_jolt_internal(Machine* self,
                             HashMap* parity_to_presses,
+                            HashMap* jolts_to_best,
                             int* jolts,
                             int depth) {
-    if self.is_vec_zero(jolts) {
+    void key = self.jolt_key(jolts);
+    if jolts_to_best.contains(key) {
+        int b = jolts_to_best.get(key);
+        free(key);
+        return b;
+    } else if self.is_vec_zero(jolts) {
         # done!
+        jolts_to_best.put(key, 0);
         return 0;
     } else if self.is_any_negative(jolts) {
         # impossible!
+        jolts_to_best.put(key, LARGE_INTEGER);
         return LARGE_INTEGER;
     }
     int parity = self.parity_of(jolts);
     ArrayList* presses = parity_to_presses.get(parity);
     if presses == null {
         # can't move forward
+        jolts_to_best.put(key, LARGE_INTEGER);
         return LARGE_INTEGER;
     }
     int best = LARGE_INTEGER;
@@ -275,6 +301,7 @@ fn Machine_do_jolt_internal(Machine* self,
         free(remaining);
         int p = self.do_jolt_internal(
             parity_to_presses,
+            jolts_to_best,
             next,
             depth + 1);
 #        if p < self.vec_max(next) {
@@ -289,6 +316,7 @@ fn Machine_do_jolt_internal(Machine* self,
             best = p;
         }
     }
+    jolts_to_best.put(key, best);
     return best;
 }
 
