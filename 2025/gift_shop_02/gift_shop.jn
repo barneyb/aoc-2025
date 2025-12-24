@@ -149,12 +149,16 @@ fn factors_no_larger_than(int n, int max) {
 
 fn parse() {
     ArrayList* ranges = ArrayList__new_owned(4, &Range_drop);
+    int to_check = 0;
     while true {
         char* lo = read_digits();
         read_expected('-');
         char* hi = read_digits();
-        ranges.push(Range__new(lo, hi));
+        Range* r = Range__new(lo, hi);
+        to_check = to_check + r.size();
+        ranges.push(r);
         if !read_if_present(',') { done; }
     }
+    printf("Total ids to check: %d\n", to_check);
     return ranges;
 }

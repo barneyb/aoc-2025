@@ -28,6 +28,10 @@ pub fn Range_drop(Range* self) {
     free(self);
 }
 
+pub fn Range_size(Range* self) {
+    return self.ihi - self.ilo + 1; # hi is inclusive
+}
+
 pub fn Range_is_too_large(Range* self, int i) {
     return i > self.ihi;
 }
