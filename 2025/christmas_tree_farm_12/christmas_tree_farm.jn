@@ -1,8 +1,26 @@
 pub fn main() {
     int areas = 0;
+    int tiny = 0;
     int huge = 0;
+    ArrayList* sizes = ArrayList__new(10);
     while !iseof() {
         int w = read_int();
+        if read_if_present(':') {
+            # a shape!
+            int sz = 0;
+            int lines = 3;
+            while lines > 0 {
+                lines = lines - 1;
+                read_expected(0xa);
+                while peekchar() != 0xa {
+                    if getchar() == '#' {
+                        sz = sz + 1;
+                    }
+                }
+            }
+            sizes.push(sz);
+            again;
+        }
         if !read_if_present('x') {
             # not an area, skip for now
             while getchar() != 0xa {}
@@ -10,20 +28,35 @@ pub fn main() {
         }
         int h = read_int();
         read_expected(':');
-        int count = 0;
+        int min = 0;
+        int max = 0;
         int i = 0;
-        while i < 6 {
-            i = i + 1;
+        while i < sizes.size() {
             read_expected(' ');
-            count = count + read_int();
+            int n = read_int();
+            min = min + n * sizes.get(i);
+            max = max + n * 9;
+            i = i + 1;
         }
         read_expected(0xa);
         areas = areas + 1;
-        if count * 9 <= w * h {
+        if max <= w * h {
+            # if every shape was a solid 9x9, they'd still fit
             huge = huge + 1;
         }
-#        printf("area %d; %d shapes take %d tiles, max\n", w * h, count, count * 9);
+        if min >= w * h {
+            # if every shape was packed with zero waste, they wouldn't fit
+            tiny = tiny + 1;
+        }
+#        printf("area %d; between %d and %d tiles\n", w * h, min, max);
     }
-    printf("of %d areas, %d are huge\n", areas, huge);
-    aocd_verify_a("%d", huge);
+    printf("of %d areas, %d are tiny and %d are huge\n", areas, tiny, huge);
+    if tiny + huge == areas {
+        printf("... its a gimme.\n");
+        aocd_verify_a("%d", huge);
+    } else {
+        printf("Have to do work...\n");
+        exit(1);
+    }
+    sizes.drop();
 }
