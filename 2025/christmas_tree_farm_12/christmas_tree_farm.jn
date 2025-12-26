@@ -22,7 +22,7 @@ pub fn main() {
         if count * 9 <= w * h {
             huge = huge + 1;
         }
-        printf("area %d; %d shapes take %d tiles, max\n", w * h, count, count * 9);
+#        printf("area %d; %d shapes take %d tiles, max\n", w * h, count, count * 9);
     }
     printf("of %d areas, %d are huge\n", areas, huge);
     aocd_verify_a("%d", huge);

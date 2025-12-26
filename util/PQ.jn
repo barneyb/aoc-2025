@@ -1,3 +1,5 @@
+# I am a bounded, max-oriented priority queue.
+
 pub struct PQ {
     int capacity,
     int size,

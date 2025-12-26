@@ -54,6 +54,7 @@ pub fn main(int argc, char** argv) {
     while !iseof() { boxes.push(read_box()); }
 
     aocd_verify_a("%d", part_a(conn_count, boxes));
+    aocd_verify_b("%d", part_b(boxes));
 
     boxes.drop();
 }
@@ -106,6 +107,98 @@ fn part_a(int conn_count, ArrayList* boxes) {
     printf("\nMultiply to      : %d\n", answer);
     pq.drop();
     project.drop();
+    return answer;
+}
+
+# Construct the minimum spanning tree. If we'd connected boxes in proximity
+# order until fully connected, the longest edge in the MST is the edge we want.
+fn part_b(ArrayList* boxes) {
+    # "set" of boxes without power
+    HashMap* unpowered = HashMap__new(null, null);
+    # shortest distance to an unpowered box
+    int* best_dist = malloc(boxes.size() * sizeof(int));
+    # best lights to reach an unpowered box
+    Lights** best_lights = calloc(boxes.size(), sizeof(int));
+    int i = boxes.size();
+    while i > 0 {
+        i = i - 1;
+        best_dist[i] = MAX_INTEGER;
+        unpowered.put(i, i);
+    }
+
+    # deliver power to box zero
+    best_dist[0] = 0;
+
+    while unpowered.size() > 0 {
+        # find unpowered box with with minimum distance from any powered one
+        int min_dist = MAX_INTEGER;
+        i = -1;
+        Keys* keys = unpowered.keys();
+        while true {
+            void* ptr = keys.next();
+            if ptr == null { done; }
+            int u = *ptr;
+            if best_dist[u] < min_dist {
+                min_dist = best_dist[u];
+                i = u;
+            }
+        }
+        keys.drop();
+        if i < 0 {
+            eprintf("didn't find a next box?!\n");
+            exit(1);
+        }
+
+        # give it power
+        unpowered.delete(i);
+        Box* b = boxes.get(i);
+
+        # for each unpowered box, see if the latest box brought power closer
+        keys = unpowered.keys();
+        while true {
+            ptr = keys.next();
+            if ptr == null { done; }
+            int j = *ptr;
+            int d = b.dist_squared(boxes.get(j));
+            if d >= best_dist[j] { again; }
+            best_dist[j] = d;
+            free(best_lights[j]);
+            best_lights[j] = Lights__new(i, j, d);
+        }
+        keys.drop();
+    }
+
+    # find the longest string of lights in the MST
+    int max_len = MIN_INTEGER;
+    Lights* ls = null;
+    i = boxes.size();
+    while i > 1 { # box zero was a gimme
+        i = i - 1;
+        Lights* l = best_lights[i];
+        if l == null {
+            eprintf("Didn't reach box %d?!\n", i);
+            exit(5);
+        }
+        if ls == null || ls.len < l.len {
+            free(ls);
+            ls = l;
+        } else {
+            free(l);
+        }
+    }
+
+    free(best_lights);
+    free(best_dist);
+    unpowered.drop();
+
+    b = boxes.get(ls.i);
+    printf("                 : (%d, %d, %d)\n", b.x, b.y, b.z);
+    int answer = b.x;
+    b = boxes.get(ls.j);
+    printf("                 : (%d, %d, %d)\n", b.x, b.y, b.z);
+    answer = answer * b.x;
+    printf("Multiply X's     : %d\n", answer);
+    free(ls);
     return answer;
 }
 
