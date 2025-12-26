@@ -25,6 +25,8 @@ struct Lights {
     int j,
 }
 
+fn Lights_len(Lights* self) { return self.len; }
+
 fn Lights__new(int i, int j, int len) {
     Lights* l = malloc(sizeof(Lights));
     l.i = i;
@@ -39,8 +41,6 @@ fn Lights_cmp(Lights* a, Lights* b) {
 
 fn intcmp_rev(int a, int b) { return b - a; }
 
-fn mem_stats__(bool);
-
 pub fn main(int argc, char** argv) {
     HashMap* opts = get_opts(argc, argv);
     int conn_count = 1000;
@@ -51,39 +51,45 @@ pub fn main(int argc, char** argv) {
 
     # I own the `Box`es.
     ArrayList* boxes = ArrayList__new_owned(conn_count, &free);
-    # I own the `Lights`.
-    ArrayList* lights = ArrayList__new_owned(conn_count * (conn_count / 2), &free);
-    int i = 0;
-    while !iseof() {
-        Box* b = read_box();
+    while !iseof() { boxes.push(read_box()); }
+
+    aocd_verify_a("%d", part_a(conn_count, boxes));
+    aocd_verify_b("%d", part_b(boxes));
+
+    boxes.drop();
+}
+
+fn part_a(int conn_count, ArrayList* boxes) {
+    # the N shortest strings of lights
+    PQ* pq = PQ__new(conn_count, &Lights_cmp);
+    int i = boxes.size();
+    while i > 0 {
+        i = i - 1;
+        Box* b = boxes.get(i);
         int j = boxes.size();
-        while j > 0 {
+        while true {
             j = j - 1;
-            Box* o = boxes.get(j);
-            lights.push(Lights__new(i, j, b.dist_squared(o)));
+            if i == j { done; }
+            int d = b.dist_squared(boxes.get(j));
+            # instantiation is expensive, so do a pre-check
+            Lights** lp = pq.peek();
+            if lp == null || Lights_len(*lp) > d {
+                free(pq.force_push(Lights__new(i, j, d)));
+            }
         }
-        boxes.push(b);
-        i = i + 1;
     }
-    # sort the lights by length
-    lights.sort(&Lights_cmp);
 
-    # from the shortest, connect N
-    UnionFind* uf = UnionFind__new(boxes.size());
+    # This is sorta silly, but it's correct
     Graph* project = Graph__new();
-    Lights* ls;
-    int conn = 0;
-    while conn < conn_count {
-        ls = lights.get(conn);
-        uf.union(ls.i, ls.j);
-        project.add_edge(ls.i, ls.j, ls.len);
-        project.add_edge(ls.j, ls.i, ls.len);
-        conn = conn + 1;
+    while pq.size() > 0 {
+        Lights* l = pq.pop();
+        project.add_edge(l.i, l.j, null);
+        project.add_edge(l.j, l.i, null);
+        free(l);
     }
-    printf("Connections made : %d\n", conn);
+    pq.drop();
 
-    # part A is ready!
-    PQ* pq = PQ__new(3, &intcmp_rev);
+    pq = PQ__new(3, &intcmp_rev);
     ConnComps* ccs = project.connected_components();
     while true {
         ArrayList** ptr = ccs.next();
@@ -99,32 +105,101 @@ pub fn main(int argc, char** argv) {
         answer = answer * i;
     }
     printf("\nMultiply to      : %d\n", answer);
-    aocd_verify_a("%d", answer);
     pq.drop();
     project.drop();
+    return answer;
+}
 
-    # keep going until there's a single circuit
-    while uf.count() > 1 {
-        ls = lights.get(conn);
-        uf.union(ls.i, ls.j);
-        conn = conn + 1;
+# Construct the minimum spanning tree. If we'd connected boxes in proximity
+# order until fully connected, the longest edge in the MST is the edge we want.
+fn part_b(ArrayList* boxes) {
+    # "set" of boxes without power
+    HashMap* unpowered = HashMap__new(null, null);
+    # shortest distance to an unpowered box
+    int* best_dist = malloc(boxes.size() * sizeof(int));
+    # best lights to reach an unpowered box
+    Lights** best_lights = calloc(boxes.size(), sizeof(int));
+    int i = boxes.size();
+    while i > 0 {
+        i = i - 1;
+        best_dist[i] = MAX_INTEGER;
+        unpowered.put(i, i);
     }
-    printf("Connections made : %d\n", conn);
-    printf("Final connection : %d <-> %d\n", ls.i, ls.j);
-    uf.drop();
 
-    # part B is ready!
+    # deliver power to box zero
+    best_dist[0] = 0;
+
+    while unpowered.size() > 0 {
+        # find unpowered box with with minimum distance from any powered one
+        int min_dist = MAX_INTEGER;
+        i = -1;
+        Keys* keys = unpowered.keys();
+        while true {
+            void* ptr = keys.next();
+            if ptr == null { done; }
+            int u = *ptr;
+            if best_dist[u] < min_dist {
+                min_dist = best_dist[u];
+                i = u;
+            }
+        }
+        keys.drop();
+        if i < 0 {
+            eprintf("didn't find a next box?!\n");
+            exit(1);
+        }
+
+        # give it power
+        unpowered.delete(i);
+        Box* b = boxes.get(i);
+
+        # for each unpowered box, see if the latest box brought power closer
+        keys = unpowered.keys();
+        while true {
+            ptr = keys.next();
+            if ptr == null { done; }
+            int j = *ptr;
+            int d = b.dist_squared(boxes.get(j));
+            if d >= best_dist[j] { again; }
+            best_dist[j] = d;
+            free(best_lights[j]);
+            best_lights[j] = Lights__new(i, j, d);
+        }
+        keys.drop();
+    }
+
+    # find the longest string of lights in the MST
+    int max_len = MIN_INTEGER;
+    Lights* ls = null;
+    i = boxes.size();
+    while i > 1 { # box zero was a gimme
+        i = i - 1;
+        Lights* l = best_lights[i];
+        if l == null {
+            eprintf("Didn't reach box %d?!\n", i);
+            exit(5);
+        }
+        if ls == null || ls.len < l.len {
+            free(ls);
+            ls = l;
+        } else {
+            free(l);
+        }
+    }
+
+    free(best_lights);
+    free(best_dist);
+    unpowered.drop();
+
     b = boxes.get(ls.i);
     printf("                 : (%d, %d, %d)\n", b.x, b.y, b.z);
-    answer = b.x;
+    int answer = b.x;
     b = boxes.get(ls.j);
     printf("                 : (%d, %d, %d)\n", b.x, b.y, b.z);
     answer = answer * b.x;
     printf("Multiply X's     : %d\n", answer);
-    aocd_verify_b("%d", answer);
-
-    lights.drop();
-    boxes.drop();
+    free(ls);
+    return answer;
 }
 
 fn read_box() {

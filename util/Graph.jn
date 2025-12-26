@@ -75,8 +75,7 @@ pub fn ConnComps_next(ConnComps* self) {
     while true {
         n = Keys_next(self.keys);
         if n == null { return null; }
-        if visited.contains(*n) { again; }
-        done;
+        if !visited.contains(*n) { done; }
     }
     Queue* q = Queue__new();
     q.push(*n);

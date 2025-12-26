@@ -1,3 +1,5 @@
+# I am a bounded, max-oriented priority queue.
+
 pub struct PQ {
     int capacity,
     int size,
@@ -69,8 +71,9 @@ pub fn PQ_push(PQ* self, void el) {
 pub fn PQ_force_push(PQ* self, void el) {
     if self.size < self.capacity {
         self.push(el);
+        return null;
     } else {
-        void p = self.push_pop(el);
+        return self.push_pop(el);
     }
 }
 
@@ -158,9 +161,10 @@ pub fn PQ_push_pop(PQ* self, void el) {
     }
 
     # replace it and sink.
+    void old = heap[1];
     heap[1] = el;
     self.sink(1);
-    return heap[1];
+    return old;
 }
 
 # I pop the max element off the PQ, and push on the given element, returning the
