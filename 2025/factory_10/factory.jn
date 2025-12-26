@@ -320,15 +320,9 @@ fn Machine_do_jolt_internal(Machine* self,
     return best;
 }
 
-struct Counts {
-    int light,
-    int joltage,
-}
-
 pub fn main() {
-    Counts* cs = malloc(sizeof(Counts));
-    cs.light = 0;
-    cs.joltage = 0;
+    int light = 0;
+    int joltage = 0;
     int id = 0;
     while !iseof() {
         id = id + 1;
@@ -337,19 +331,18 @@ pub fn main() {
         int l = m.do_lights();
         int j = m.do_joltages();
 #        printf("  %d for lights, %d for joltage\n", l, j);
-        cs.light = cs.light + l;
-        cs.joltage = cs.joltage + j;
+        light = light + l;
+        joltage = joltage + j;
         m.drop();
     }
-    printf("For Lights  : %d\n", cs.light);
-    aocd_verify_a("%d", cs.light);
-    printf("For Joltages: %d\n", cs.joltage);
-    aocd_verify_b("%d", cs.joltage);
-    free(cs);
+    printf("For Lights  : %d\n", light);
+    aocd_verify_a("%d", light);
+    printf("For Joltages: %d\n", joltage);
+    aocd_verify_b("%d", joltage);
 }
 
 fn read_machine(int id) {
-    if getchar() != '[' { exit(23); }
+    read_expected('[');
     int lights = 0;
     int len = 0;
     while peekchar() != ']' {
@@ -360,10 +353,9 @@ fn read_machine(int id) {
         }
     }
     Machine* m = Machine__new(id, len, lights);
-    if getchar() != ']' { exit(24); }
-    if getchar() != ' ' { exit(25); }
-    while peekchar() == '(' {
-        getchar();
+    read_expected(']');
+    read_expected(' ');
+    while read_if_present('(') {
         int btn = 0;
         while true {
             int n = read_int();
@@ -372,19 +364,17 @@ fn read_machine(int id) {
             if getchar() != ',' { done; }
         }
         m.add_button(btn);
-        if getchar() != ' ' { exit(26); }
+        read_expected(' ');
     }
-    if getchar() != '{' { exit(27); }
+    read_expected('{');
     ArrayList* joltages = ArrayList__new(len + 1);
     while peekchar() != '}' {
-        if peekchar() == ',' {
-            getchar();
-        }
+        read_if_present(',');
         joltages.push(read_int());
     }
     m.set_joltages(joltages.into_array());
-    if getchar() != '}' { exit(28); }
-    if getchar() != 0xa { exit(29); }
+    read_expected('}');
+    read_expected(0xa);
     return m;
 }
 
