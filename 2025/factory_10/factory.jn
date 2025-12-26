@@ -1,15 +1,18 @@
 struct Press {
+#    char* label,
     # how many buttons it takes
-    char* label,
     int count,
     int* jolts,
     # aggregate parity
     int parity,
 }
 
-fn Press__new(char* label, int count, int* jolts, int parity) {
+fn Press__new(#char* label,
+              int count,
+              int* jolts,
+              int parity) {
     Press* p = malloc(sizeof(Press));
-    p.label = label;
+    #p.label = label;
     p.count = count;
     p.jolts = jolts;
     p.parity = parity;
@@ -17,7 +20,7 @@ fn Press__new(char* label, int count, int* jolts, int parity) {
 }
 
 fn Press_drop(Press* self) {
-    free(self.label);
+#    free(self.label);
     free(self.jolts);
     free(self);
 }
@@ -40,7 +43,7 @@ fn Machine__new(int id, int light_count, int light_state) {
     m.buttons = ArrayList__new(10);
     m.presses = ArrayList__new_owned(10, &Press_drop);
     # this is pointless and wasteful, but makes the counts sensical
-    ArrayList_push(m.presses, Press__new(strclone(""),
+    ArrayList_push(m.presses, Press__new(#strclone(""),
                                          0,
                                          calloc(light_count, sizeof(int)),
                                          0));
@@ -80,10 +83,10 @@ fn Machine_add_button(Machine* self, int btn) {
     while i > 0 {
         i = i - 1;
         Press* o = old.get(i);
-        StringBuilder* sb = StringBuilder__new(16);
-        sb.push_str(o.label);
-        sb.push(c);
-        new_presses.push(Press__new(sb.into_chars(),
+#        StringBuilder* sb = StringBuilder__new(16);
+#        sb.push_str(o.label);
+#        sb.push(c);
+        new_presses.push(Press__new(#sb.into_chars(),
                                     o.count + 1,
                                     self.vec_sum(o.jolts, arr),
                                     o.parity ^ parity));
