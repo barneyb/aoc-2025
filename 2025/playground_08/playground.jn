@@ -47,14 +47,19 @@ pub fn main(int argc, char** argv) {
     if opts.contains("-n") {
         conn_count = atoi(opts.get("-n"));
     }
+    bool do_svg = opts.contains("--svg");
     opts.drop();
 
     # I own the `Box`es.
     ArrayList* boxes = ArrayList__new_owned(conn_count, &free);
     while !iseof() { boxes.push(read_box()); }
 
-    aocd_verify_a("%d", part_a(conn_count, boxes));
-    aocd_verify_b("%d", part_b(boxes));
+    if do_svg {
+        part_b(boxes, do_svg);
+    } else {
+        aocd_verify_a("%d", part_a(conn_count, boxes));
+        aocd_verify_b("%d", part_b(boxes, do_svg));
+    }
 
     boxes.drop();
 }
@@ -112,9 +117,16 @@ fn part_a(int conn_count, ArrayList* boxes) {
 
 # Construct the minimum spanning tree. If we'd connected boxes in proximity
 # order until fully connected, the longest edge in the MST is the edge we want.
-fn part_b(ArrayList* boxes) {
+fn part_b(ArrayList* boxes, bool do_svg) {
     # "set" of boxes without power
     HashMap* unpowered = HashMap__new(null, null);
+    Svg* svg = null;
+    int f = 2;
+    int off = 500;
+    if do_svg {
+        svg = Svg__new(1000, 1000);
+        if boxes.size() > 100 { f = 200; }
+    }
     # shortest distance to an unpowered box
     int* best_dist = malloc(boxes.size() * sizeof(int));
     # best lights to reach an unpowered box
@@ -128,6 +140,9 @@ fn part_b(ArrayList* boxes) {
 
     # deliver power to box zero
     best_dist[0] = 0;
+    if do_svg {
+        add_power(svg, f, off, boxes.get(0));
+    }
 
     while unpowered.size() > 0 {
         # find unpowered box with with minimum distance from any powered one
@@ -152,6 +167,10 @@ fn part_b(ArrayList* boxes) {
         # give it power
         unpowered.delete(i);
         Box* b = boxes.get(i);
+        if do_svg && i > 0 {
+            Lights* ls = best_lights[i];
+            add_lights(svg, f, off, boxes.get(ls.i), b);
+        }
 
         # for each unpowered box, see if the latest box brought power closer
         keys = unpowered.keys();
@@ -170,7 +189,7 @@ fn part_b(ArrayList* boxes) {
 
     # find the longest string of lights in the MST
     int max_len = MIN_INTEGER;
-    Lights* ls = null;
+    ls = null;
     i = boxes.size();
     while i > 1 { # box zero was a gimme
         i = i - 1;
@@ -192,14 +211,28 @@ fn part_b(ArrayList* boxes) {
     unpowered.drop();
 
     b = boxes.get(ls.i);
-    printf("                 : (%d, %d, %d)\n", b.x, b.y, b.z);
+    if !do_svg { printf("                 : (%d, %d, %d)\n", b.x, b.y, b.z); }
     int answer = b.x;
     b = boxes.get(ls.j);
-    printf("                 : (%d, %d, %d)\n", b.x, b.y, b.z);
+    if !do_svg { printf("                 : (%d, %d, %d)\n", b.x, b.y, b.z); }
     answer = answer * b.x;
-    printf("Multiply X's     : %d\n", answer);
+    if !do_svg { printf("Multiply X's     : %d\n", answer); }
     free(ls);
+    if do_svg { svg.drop(); }
     return answer;
+}
+
+fn add_lights(Svg* svg, int f, int off, Box* a, Box* b) {
+    add_power(svg, f, off, b);
+    svg.line(a.x / f      , a.y / f      , b.x / f      , b.y / f      , "stroke:green");
+    svg.line(a.y / f + off, a.z / f      , b.y / f + off, b.z / f      , "stroke:green");
+    svg.line(a.x / f      , a.z / f + off, b.x / f      , b.z / f + off, "stroke:green");
+}
+
+fn add_power(Svg* svg, int f, int off, Box* b) {
+    svg.rect(b.x / f - 1      , b.y / f - 1      , 3, 3, "fill:red");
+    svg.rect(b.y / f - 1 + off, b.z / f - 1      , 3, 3, "fill:red");
+    svg.rect(b.x / f - 1      , b.z / f - 1 + off, 3, 3, "fill:red");
 }
 
 fn read_box() {
