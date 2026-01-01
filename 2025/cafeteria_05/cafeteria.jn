@@ -22,98 +22,115 @@ fn Range_size(Range* self) {
     return self.hi - self.lo + 1;
 }
 
+fn Range_cmp(Range* a, Range* b) {
+    if a.lo == b.lo {
+        return a.hi - b.hi;
+    }
+    return a.lo - b.lo;
+}
+
 pub fn main() {
-    SortedMap* ranges = SortedMap__new_owned(null, null, &free);
+    ArrayList* ranges = read_ranges();
 
-    # read in the ranges
-    char* line;
-    while !iseof() {
-        line = read_line();
-        if *line == null {
-            free(line);
-            done;
-        }
-        register_range(ranges, parse_range(line));
-        free(line);
-    }
+#    dump_ranges(ranges);
+    ranges.sort(&Range_cmp);
+#    dump_ranges(ranges);
+    stitch_ranges(ranges);
+#    dump_ranges(ranges);
 
-    # count the fresh ingredients
-    int count = 0;
-    while !iseof() {
-        line = read_line();
-        int id = atoi(line);
-        free(line);
-        if get_range_for(ranges, id) != null {
-            count = count + 1;
-        }
-    }
-    printf("Fresh Ingredients: %d\n", count);
-    aocd_verify_a("%d", count);
-
-    # count the IDs considered fresh
-    count = 0;
-    SortedValues* itr = ranges.values();
-    while true {
-        Range** ptr = itr.next();
-        if ptr == null { done; }
-        Range* r = *ptr;
-        count = count + r.size();
-    }
-    itr.drop();
-    printf("Fresh IDs        : %d\n", count);
-    aocd_verify_b("%d", count);
+    part_a(ranges);
+    part_b(ranges);
 
     ranges.drop();
 }
 
-fn register_range(SortedMap* ranges, Range* r) {
-    Range* existing;
+fn read_ranges() {
+    ArrayList* ranges = ArrayList__new_owned(10, &free);
 
-    # Combine ranges at lo. If an existing range fully contains r, there's
-    # nothing to do. If there is overlap, extend r down to the existing range's
-    # lo, and remove the existing range.
-    while true {
-        existing = get_range_for(ranges, r.lo);
-        if existing == null { done; }
-        if existing.contains(r.hi) {
-            # r is fully contained in existing
-            free(r);
-            return;
+    # read in the ranges
+    while !iseof() {
+        char* line = read_line();
+        if *line == null {
+            free(line);
+            done;
+        }
+        ranges.push(parse_range(line));
+        free(line);
+    }
+
+    return ranges;
+}
+
+fn stitch_ranges(ArrayList* ranges) {
+    ArrayList* stack = ArrayList__new(ranges.size());
+    while ranges.size() > 0 {
+        stack.push(ranges.pop());
+    }
+    Range* prev = stack.pop();
+    ranges.push(prev);
+    while stack.size() > 0 {
+        Range* curr = stack.pop();
+        if prev.contains(curr.lo) {
+            if curr.hi > prev.hi {
+                prev.hi = curr.hi;
+            }
+            free(curr);
         } else {
-            # they overlap, so extend
-            r.lo = existing.lo;
-            free(ranges.delete(existing.lo));
+            prev = curr;
+            ranges.push(prev);
         }
     }
+    stack.drop();
+}
 
-    # Combine ranges at hi. If an existing range overlaps, extend r up to its
-    # hi. Otherwise the existing range is fully contained in r. Either way,
-    # remove the existing range.
-    while true {
-        existing = get_potential_range_for(ranges, r.hi);
-        if existing == null || !r.contains(existing.lo) { done; }
-        if r.hi < existing.hi {
-            r.hi = existing.hi;
+fn part_a(ArrayList* ranges) {
+    # read in the ids
+    int count = 0;
+    while !iseof() {
+        char* line = read_line();
+        int id = atoi(line);
+        int lo = 0;
+        int hi = ranges.size() - 1;
+        while lo <= hi {
+            int mid = lo + ((hi-lo) >> 2);
+            Range* r = ranges.get(mid);
+            if r.hi < id {
+                lo = mid + 1;
+            } else if r.lo > id {
+                hi = mid - 1;
+            } else {
+                # got it
+                count = count + 1;
+                done;
+            }
         }
-        free(ranges.delete(existing.lo));
+        free(line);
     }
-
-    # register it!
-    ranges.put(r.lo, r);
+    printf("Fresh Ingredients: %d\n", count);
+    aocd_verify_a("%d", count);
 }
 
-# I return the range which might contain `n`, or `null` if none could.
-fn get_potential_range_for(SortedMap* ranges, int n) {
-    int* key = ranges.floor_key(n);
-    if key == null { return null; }
-    return ranges.get(*key);
+fn part_b(ArrayList* ranges) {
+    int count = 0;
+    int i = ranges.size();
+    while i > 0 {
+        i = i - 1;
+        Range* r = ranges.get(i);
+        count = count + r.size();
+    }
+    printf("Fresh IDs        : %d\n", count);
+    aocd_verify_b("%d", count);
 }
 
-# I return the range containing `n`, or `null` if none do.
-fn get_range_for(SortedMap* ranges, int n) {
-    Range* r = get_potential_range_for(ranges, n);
-    if r != null && r.contains(n) { return r; }
-    return null;
+fn dump_ranges(ArrayList* ranges) {
+    int len = ranges.size();
+    printf("Ranges (%d):\n", len);
+    int i = 0;
+    while i < len {
+        Range* r = ranges.get(i);
+        i = i + 1;
+        printf("  %d - %d\n", r.lo, r.hi);
+    }
 }
 
 fn parse_range(char* str) {
@@ -129,6 +146,6 @@ fn read_int(char** str) {
         i = i * 10 + (*s - '0');
         s = s + 1;
     }
-    *str =s ;
+    *str = s;
     return i;
 }
