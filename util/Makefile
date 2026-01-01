@@ -13,7 +13,7 @@ OBJECTS = \
 all: $(OBJECTS)
 
 $(LIB)/time.o:
-	gcc -c time.c $(LIB)/time.o
+	gcc -c time.c -o $(LIB)/time.o
 
 $(OUT)/graph_to_dot.s: \
 		$(OUT)/Graph.jnh \

@@ -30,18 +30,26 @@ fn Range_cmp(Range* a, Range* b) {
 }
 
 pub fn main() {
+    int total_start = micro_time();
+    int start = micro_time();
     ArrayList* ranges = read_ranges();
 
 #    dump_ranges(ranges);
     ranges.sort(&Range_cmp);
 #    dump_ranges(ranges);
     stitch_ranges(ranges);
+    printf("%d us : register ranges\n", micro_time() - start);
 #    dump_ranges(ranges);
 
+    start = micro_time();
     part_a(ranges);
+    printf("%d us : part_a\n", micro_time() - start);
+    start = micro_time();
     part_b(ranges);
+    printf("%d us : part_b\n", micro_time() - start);
 
     ranges.drop();
+    printf("%d us : total\n", micro_time() - total_start);
 }
 
 fn read_ranges() {

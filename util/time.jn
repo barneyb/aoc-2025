@@ -1,0 +1,4 @@
+# I return a microsecond-resolution offset an unspecified time origin, which
+# is not subject to clock adjustment. The result is only meaningful when
+# compared with the result of another invocation.
+pub fn micro_time();
