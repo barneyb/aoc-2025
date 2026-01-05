@@ -4,3 +4,5 @@ target/
 input.txt
 *.dot
 *.svg
+/out/
+*.egg-info/
