@@ -4,8 +4,8 @@
 pub struct UnionFind {
     # parent of `i`
     int* parent,
-    # rank of subtree at `i`
-    int* rank,
+    # size of subtree rooted at `i`
+    int* size,
     # the number of components.
     int count,
 }
@@ -14,13 +14,15 @@ pub struct UnionFind {
 pub fn UnionFind__new(int site_count) {
     UnionFind* uf = malloc(sizeof(UnionFind));
     int* parent = malloc(site_count * sizeof(int));
+    int* size = malloc(site_count * sizeof(int));
     int i = site_count;
     while i > 0 {
         i = i - 1;
         parent[i] = i;
+        size[i] = 1;
     }
     uf.parent = parent;
-    uf.rank = calloc(site_count, sizeof(int));
+    uf.size = size;
     uf.count = site_count;
     return uf;
 }
@@ -28,7 +30,7 @@ pub fn UnionFind__new(int site_count) {
 # I drop the `UnionFind`.
 pub fn UnionFind_drop(UnionFind* self) {
     free(self.parent);
-    free(self.rank);
+    free(self.size);
     free(self);
 }
 
@@ -39,16 +41,16 @@ pub fn UnionFind_union(UnionFind* self, int p, int q) {
     if p == q { return; }
 
     int* parent = self.parent;
-    int* rank = self.rank;
-    int rp = rank[p];
-    int rq = rank[q];
+    int* size = self.size;
+    int np = size[p];
+    int nq = size[q];
     # put the smaller subtree under the larger
-    if rp < rq {
+    if np < nq {
         parent[p] = q;
-        rank[q] = rq + 1;
+        size[q] = np + nq;
     } else {
         parent[q] = p;
-        rank[p] = rp + 1;
+        size[p] = np + nq;
     }
 
     self.count = self.count - 1;
@@ -63,6 +65,13 @@ pub fn UnionFind_find(UnionFind* self, int p) {
         p = parent[p];
     }
     return p;
+}
+
+# I return the size of `p`'s component.
+pub fn UnionFind_size_of(UnionFind* self, int p) {
+    p = self.find(p);
+    int* size = self.size;
+    return size[p];
 }
 
 # I return the number of components.

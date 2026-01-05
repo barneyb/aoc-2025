@@ -84,24 +84,26 @@ fn part_a(int conn_count, ArrayList* boxes) {
         }
     }
 
-    # This is sorta silly, but it's correct
-    Graph* project = Graph__new();
+    # from the shortest, connect N
+    UnionFind* uf = UnionFind__new(boxes.size());
     while pq.size() > 0 {
         Lights* l = pq.pop();
-        project.add_edge(l.i, l.j, null);
-        project.add_edge(l.j, l.i, null);
+        uf.union(l.i, l.j);
         free(l);
     }
     pq.drop();
 
+    # part A is ready!
     pq = PQ__new(3, &intcmp_rev);
-    ConnComps* ccs = project.connected_components();
-    while true {
-        ArrayList** ptr = ccs.next();
-        if ptr == null { done; }
-        pq.force_push(ArrayList_size(*ptr));
+    i = boxes.size();
+    while i > 0 {
+        i = i - 1;
+        if uf.find(i) == i {
+            pq.force_push(uf.size_of(i));
+        }
     }
-    ccs.drop();
+    uf.drop();
+
     int answer = 1;
     printf("Largest circuits :");
     while pq.size() > 0 {
@@ -111,7 +113,6 @@ fn part_a(int conn_count, ArrayList* boxes) {
     }
     printf("\nMultiply to      : %d\n", answer);
     pq.drop();
-    project.drop();
     return answer;
 }
 
