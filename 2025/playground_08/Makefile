@@ -8,6 +8,7 @@ OBJECTS = \
 	$(UTIL)/$(LIB)/get_opts.o \
 	$(UTIL)/$(LIB)/Graph.o \
 	$(UTIL)/$(LIB)/PQ.o \
+	$(UTIL)/$(LIB)/UnionFind.o \
 
 all: $(PROG) input.txt
 	time $(PROG) < input.txt
@@ -23,6 +24,7 @@ $(OUT)/playground.s: \
 		$(UTIL)/$(OUT)/get_opts.jnh \
 		$(UTIL)/$(OUT)/Graph.jnh \
 		$(UTIL)/$(OUT)/PQ.jnh \
+		$(UTIL)/$(OUT)/UnionFind.jnh \
 		playground.jn
 	${CATPILE}
 
