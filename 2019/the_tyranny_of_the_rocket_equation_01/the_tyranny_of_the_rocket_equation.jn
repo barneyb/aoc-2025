@@ -1,0 +1,26 @@
+pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
+    int fuel_a = 0;
+    int fuel_b = 0;
+    while !iseof() {
+        char* line = read_line();
+        int mass = atoi(line);
+        free(line);
+        fuel_a = fuel_a + fuel(mass);
+        while true {
+            int f = fuel(mass);
+            if f <= 0 { done; }
+            fuel_b = fuel_b + f;
+            mass = f;
+        }
+    }
+    *ans_a = itoa(fuel_a);
+    *ans_b = itoa(fuel_b);
+}
+
+fn fuel(int mass) {
+    return mass / 3 - 2;
+}
