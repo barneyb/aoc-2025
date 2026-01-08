@@ -30,7 +30,10 @@ fn Range_cmp(Range* a, Range* b) {
 }
 
 pub fn main() {
-    int total_start = micro_time();
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     int start = micro_time();
     ArrayList* ranges = read_ranges();
 
@@ -42,14 +45,13 @@ pub fn main() {
 #    dump_ranges(ranges);
 
     start = micro_time();
-    part_a(ranges);
+    *ans_a = itoa(part_a(ranges));
     printf("%d us : part_a\n", micro_time() - start);
     start = micro_time();
-    part_b(ranges);
+    *ans_b = itoa(part_b(ranges));
     printf("%d us : part_b\n", micro_time() - start);
 
     ranges.drop();
-    printf("%d us : total\n", micro_time() - total_start);
 }
 
 fn read_ranges() {
@@ -115,7 +117,7 @@ fn part_a(ArrayList* ranges) {
         free(line);
     }
     printf("Fresh Ingredients: %d\n", count);
-    aocd_verify_a("%d", count);
+    return count;
 }
 
 fn part_b(ArrayList* ranges) {
@@ -127,7 +129,7 @@ fn part_b(ArrayList* ranges) {
         count = count + r.size();
     }
     printf("Fresh IDs        : %d\n", count);
-    aocd_verify_b("%d", count);
+    return count;
 }
 
 fn dump_ranges(ArrayList* ranges) {

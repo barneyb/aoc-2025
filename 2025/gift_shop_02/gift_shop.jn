@@ -1,4 +1,8 @@
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     ArrayList* ranges = parse();
     Iter* itr = ranges.iter();
     int part_a = 0;
@@ -11,8 +15,8 @@ pub fn main() {
         part_a = part_a + sum_of_invalid_ids_a(*rp);
         part_b = part_b + sum_of_invalid_ids_b(*rp);
     }
-    aocd_verify_a("%d", part_a);
-    aocd_verify_b("%d", part_b);
+    *ans_a = itoa(part_a);
+    *ans_b = itoa(part_b);
     free(itr);
     ranges.drop();
 }

@@ -324,6 +324,10 @@ fn Machine_do_jolt_internal(Machine* self,
 }
 
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     int light = 0;
     int joltage = 0;
     int id = 0;
@@ -339,9 +343,9 @@ pub fn main() {
         m.drop();
     }
     printf("For Lights  : %d\n", light);
-    aocd_verify_a("%d", light);
+    *ans_a = itoa(light);
     printf("For Joltages: %d\n", joltage);
-    aocd_verify_b("%d", joltage);
+    *ans_b = itoa(joltage);
 }
 
 fn read_machine(int id) {

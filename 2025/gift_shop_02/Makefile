@@ -7,6 +7,7 @@ OBJECTS = \
 	$(UTIL)/$(LIB)/aocd.o \
 	$(UTIL)/$(LIB)/read.o \
 	$(UTIL)/$(LIB)/string.o \
+	$(UTIL)/$(LIB)/time.o \
 	$(LIB)/Range.o \
 
 all: $(PROG) input.txt
@@ -22,6 +23,7 @@ $(OUT)/gift_shop.s: \
 		$(UTIL)/$(OUT)/aocd.jnh \
 		$(UTIL)/$(OUT)/read.jnh \
 		$(UTIL)/$(OUT)/string.jnh \
+		$(UTIL)/$(OUT)/time.jnh \
 		$(OUT)/Range.jnh \
 		gift_shop.jn
 	${CATPILE}

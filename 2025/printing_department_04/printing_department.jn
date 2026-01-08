@@ -24,10 +24,14 @@ fn Map_drop(Map* self) {
 }
 
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     Map* m = parse();
     ArrayList* accessible = get_accessible(m);
-    aocd_verify_a("%d", accessible.size());
-    aocd_verify_b("%d", count_removable(m, accessible));
+    *ans_a = itoa(accessible.size());
+    *ans_b = itoa(count_removable(m, accessible));
     accessible.drop();
     m.drop();
 }

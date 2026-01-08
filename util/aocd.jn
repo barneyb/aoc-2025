@@ -1,21 +1,21 @@
 struct StringBuilder;
 
-pub fn aocd_verify_a(char* conv, void answer) {
-    aocd_verify('A', conv, answer);
+pub fn solve(char** ans_a, char** ans_b);
+
+pub fn aocd_run(void* solve) {
+    int start = micro_time();
+    char* ans_a = null;
+    char* ans_b = null;
+    solve(&ans_a, &ans_b);
+    if ans_a != null || ans_b != null {
+        aocd_print('A', ans_a);
+        aocd_print('B', ans_b);
+        aocd_print('T', itoa(micro_time() - start));
+    }
 }
 
-pub fn aocd_verify_b(char* conv, void answer) {
-    aocd_verify('B', conv, answer);
-}
-
-fn aocd_verify(char part, char* conv, void answer) {
-    StringBuilder* sb = StringBuilder__new(30);
-    sb.push_str("[__AOCD_VERIFY_");
-    sb.push(part);
-    sb.push_str("__[");
-    sb.push_str(conv);
-    sb.push_str("]]\n");
-    char* fmt = sb.into_chars();
-    printf(fmt, answer);
-    free(fmt);
+fn aocd_print(char part, char* value) {
+    if value == null { return; }
+    printf("[__AOCD_VERIFY_%c__[%s]]\n", part, value);
+    free(value);
 }

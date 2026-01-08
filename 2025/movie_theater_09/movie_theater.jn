@@ -16,32 +16,40 @@ fn Tile_area(Tile* self, Tile* other) {
     return dx * dy;
 }
 
+bool SVG = false;
+bool PART_B = false;
+
 pub fn main(int argc, char** argv) {
     HashMap* opts = get_opts(argc, argv);
-    ArrayList* tiles = read_input();
-    bool part_b = !opts.contains("--no-part-b");
+    SVG = opts.contains("--svg");
+    PART_B = !opts.contains("--no-part-b");
+    opts.drop();
 
-    if opts.contains("--svg") {
-        emit_svg(tiles, part_b);
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
+    ArrayList* tiles = read_input();
+
+    if SVG {
+        emit_svg(tiles, PART_B);
         tiles.drop();
-        opts.drop();
         return;
     }
 
     int area = largest_rectangle(tiles);
     printf("Largest Rectangle: %d\n", area);
-    aocd_verify_a("%d", area);
+    *ans_a = itoa(area);
 
-    if part_b {
+    if PART_B {
         area = largest_redgreen_rectangle(tiles);
         printf("Largest Colored Rectangle: %d\n", area);
-        aocd_verify_b("%d", area);
+        *ans_b = itoa(area);
     } else {
         printf("Skipping part b");
     }
 
     tiles.drop();
-    opts.drop();
 }
 
 fn largest_redgreen_rectangle(ArrayList* tiles) {

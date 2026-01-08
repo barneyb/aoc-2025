@@ -20,34 +20,46 @@ fn label_node(int n) {
     }
 }
 
+bool DOT = false;
+bool PART_A = false;
+bool PART_B = false;
+
 pub fn main(int argc, char** argv) {
     HashMap* opts = get_opts(argc, argv);
+    DOT = opts.contains("--dot");
+    PART_A = opts.contains("--part-a");
+    PART_B = opts.contains("--part-b");
+    opts.drop();
+
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     HashMap* id2name = HashMap__new_owned(null, null, null, &free);
     ID_TO_NAME = id2name;
     Graph* G = Graph__new();
     read_graph(G);
 
     int n;
-    if opts.contains("--dot") {
+    if DOT {
         G.dot_reachable(&label_node, null, YOU);
-    } else if opts.contains("--part-a") {
+    } else if PART_A {
         n = count_all_paths(G, YOU, OUT);
-        printf("Path Count: %d\n", n);
-    } else if opts.contains("--part-b") {
+        printf("Path Count A: %d\n", n);
+    } else if PART_B {
         n = count_bad_paths(G, SVR, OUT);
-        printf("Path Count: %d\n", n);
+        printf("Path Count B: %d\n", n);
     } else {
         n = count_all_paths(G, YOU, OUT);
-        printf("Path Count: %d\n", n);
-        aocd_verify_a("%d", n);
+        printf("Path Count A: %d\n", n);
+        *ans_a = itoa(n);
         n = count_bad_paths(G, SVR, OUT);
-        printf("Path Count: %d\n", n);
-        aocd_verify_b("%d", n);
+        printf("Path Count B: %d\n", n);
+        *ans_b = itoa(n);
     }
 
     G.drop();
     id2name.drop();
-    opts.drop();
 }
 
 fn count_bad_paths(Graph* G, int start, int end) {

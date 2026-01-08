@@ -4,6 +4,10 @@ struct Bests {
 }
 
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     int** ings = malloc(sizeof(int*) * 4);
     int ing_count = 0;
     while !iseof() {
@@ -17,9 +21,9 @@ pub fn main() {
 
     Bests* bests = find_bests(ings);
     printf("Best Score            : %d\n", bests.overall);
-    aocd_verify_a("%d", bests.overall);
+    *ans_a = itoa(bests.overall);
     printf("Best 500 Calorie Score: %d\n", bests.cal_500);
-    aocd_verify_b("%d", bests.cal_500);
+    *ans_b = itoa(bests.cal_500);
     free(bests);
 
     int i = 0;

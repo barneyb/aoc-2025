@@ -6,6 +6,7 @@ PROG = $(BIN)/$(NAME)
 OBJECTS = \
 	$(UTIL)/$(LIB)/aocd.o \
 	$(UTIL)/$(LIB)/Pt.o \
+	$(UTIL)/$(LIB)/time.o \
 	$(LIB)/Input.o \
 	$(LIB)/Instructions.o \
 	$(LIB)/Points.o \
@@ -25,6 +26,7 @@ ex3: $(PROG) ex3.txt
 $(OUT)/crossed_wires.s: \
 		$(UTIL)/$(OUT)/aocd.jnh \
 		$(UTIL)/$(OUT)/Pt.jnh \
+		$(UTIL)/$(OUT)/time.jnh \
 		$(OUT)/Input.jnh \
 		$(OUT)/Instructions.jnh \
 		$(OUT)/Points.jnh \

@@ -1,4 +1,8 @@
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     int areas = 0;
     int tiny = 0;
     int huge = 0;
@@ -53,7 +57,7 @@ pub fn main() {
     printf("of %d areas, %d are tiny and %d are huge\n", areas, tiny, huge);
     if tiny + huge == areas {
         printf("... its a gimme.\n");
-        aocd_verify_a("%d", huge);
+        *ans_a = itoa(huge);
     } else {
         printf("Have to do work...\n");
         exit(1);

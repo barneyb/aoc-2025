@@ -1,4 +1,8 @@
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     ArrayList* lines = ArrayList__new_owned(5, &free);
     while !iseof() {
         lines.push(read_line());
@@ -9,11 +13,11 @@ pub fn main() {
 
     int total = part_a(ops, lines);
     printf("Line Oriented  : %d\n", total);
-    aocd_verify_a("%d", total);
+    *ans_a = itoa(total);
 
     total = part_b(ops, lines);
     printf("Column Oriented: %d\n", total);
-    aocd_verify_b("%d", total);
+    *ans_b = itoa(total);
 
     free(ops);
     lines.drop();

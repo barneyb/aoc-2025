@@ -7,6 +7,7 @@ OBJECTS = \
 	$(UTIL)/$(LIB)/aocd.o \
 	$(UTIL)/$(LIB)/get_opts.o \
 	$(UTIL)/$(LIB)/Svg.o \
+	$(UTIL)/$(LIB)/time.o \
 
 all: $(PROG) input.txt
 	time $(PROG) < input.txt
@@ -22,6 +23,7 @@ $(OUT)/movie_theater.s: \
 		$(UTIL)/$(OUT)/aocd.jnh \
 		$(UTIL)/$(OUT)/get_opts.jnh \
 		$(UTIL)/$(OUT)/Svg.jnh \
+		$(UTIL)/$(OUT)/time.jnh \
 		movie_theater.jn
 	${CATPILE}
 

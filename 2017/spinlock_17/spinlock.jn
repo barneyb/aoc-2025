@@ -1,4 +1,8 @@
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     # process input
     char* line = read_line();
     int steps = atoi(line);
@@ -6,12 +10,12 @@ pub fn main() {
 
     int p1 = part_one(2017, steps);
     printf("After 2017 comes             : %d\n", p1);
-    aocd_verify_a("%d", p1);
+    *ans_a = itoa(p1);
 #    printf("Zero's follower after 9 is   : %d\n", part_two(9, steps));
 #    printf("Zero's follower after 2017 is: %d\n", part_two(2017, steps));
     int p2 = part_two(50_000_000, steps);
     printf("Zero's follower after 50M is : %d\n", p2);
-    aocd_verify_b("%d", p2);
+    *ans_b = itoa(p2);
     # brute forcing part two takes ~90 seconds
 }
 

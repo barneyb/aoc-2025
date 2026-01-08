@@ -3,13 +3,7 @@ struct StringBuilder;
 pub fn main(int argc, char** argv) {
     if argc == 1 {
         # the real deal
-        char* init = read_line();
-        char* a = into_checksum(strclone(init), 272);
-        aocd_verify_a("%s", a);
-        free(a);
-        char* b = into_checksum(init, 35651584);
-        aocd_verify_b("%s", b);
-        free(b);
+        aocd_run(&solve);
     } else if argc == 3 {
         int disk_size = atoi(argv[1]);
         char* data = argv[2];
@@ -20,6 +14,12 @@ pub fn main(int argc, char** argv) {
         eprintf("Expected zero or two arguments\n");
         exit(1);
     }
+}
+
+fn solve(char** ans_a, char** ans_b) {
+    char* init = read_line();
+    *ans_a = into_checksum(strclone(init), 272);
+    *ans_b = into_checksum(init, 35651584);
 }
 
 fn into_checksum(char* data, int disk_size) {

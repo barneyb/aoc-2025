@@ -80,6 +80,7 @@ include ../../make_vars.inc
 PROG = \$(BIN)/\$(NAME)
 OBJECTS = \\
 	\$(UTIL)/\$(LIB)/aocd.o \\
+	\$(UTIL)/\$(LIB)/time.o \\
 
 all: \$(PROG) input.txt
 	time \$(PROG) < input.txt
@@ -89,6 +90,7 @@ ex1: \$(PROG) ex1.txt
 
 \$(OUT)/${NAME}.s: \\
 		\$(UTIL)/\$(OUT)/aocd.jnh \\
+		\$(UTIL)/\$(OUT)/time.jnh \\
 		${NAME}.jn
 	\${CATPILE}
 
@@ -97,6 +99,10 @@ EOF
 
 cat << EOF > "${NAME}.jn"
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     puts("Hello, ${NAME}!");
     int line_count = 0;
     int char_count = 0;
@@ -114,7 +120,7 @@ pub fn main() {
         line_count = line_count + 1;
     }
     printf(fmt, line_count, char_count / line_count);
-#    aocd_verify_a("%d", );
+#    *ans_a = itoa();
 }
 EOF
 

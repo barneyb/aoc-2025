@@ -45,14 +45,20 @@ def solve(year, day, data):
         os.remove(input_txt)
     part_a = None
     part_b = None
-    for p, ans in re.findall(r"\[__AOCD_VERIFY_([AB])__\[([^]]+)]]", str(proc.stdout)):
+    part_t = None
+    for p, ans in re.findall(r"\[__AOCD_VERIFY_([ABT])__\[([^]]+)]]", str(proc.stdout)):
         if p == "A":
             if part_a is None:
                 part_a = ans
             elif part_a != ans:
                 raise Exception(f"Multiple answers for part A?! '{part_a}' and {ans}")
-        elif part_b is None:
-            part_b = ans
-        elif part_b != ans:
-            raise Exception(f"Multiple answers for part B?! '{part_b}' and {ans}")
-    return part_a, part_b
+        elif p == "B":
+            if part_b is None:
+                part_b = ans
+            elif part_b != ans:
+                raise Exception(f"Multiple answers for part B?! '{part_b}' and {ans}")
+        elif part_t is None:
+            part_t = int(ans) * 1000  # convert to nanos
+        else:
+            raise Exception(f"Multiple reported times?! '{part_t}' and {ans}")
+    return part_a, part_b, part_t

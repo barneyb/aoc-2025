@@ -15,6 +15,11 @@ all: $(OBJECTS)
 $(LIB)/time.o:
 	gcc -c time.c -o $(LIB)/time.o
 
+$(OUT)/aocd.s: \
+		$(OUT)/time.jnh \
+		aocd.jn
+	${CATPILE}
+
 $(OUT)/graph_to_dot.s: \
 		$(OUT)/Graph.jnh \
 		graph_to_dot.jn

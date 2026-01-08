@@ -8,6 +8,7 @@ OBJECTS = \
 	$(UTIL)/$(LIB)/get_opts.o \
 	$(UTIL)/$(LIB)/Graph.o \
 	$(UTIL)/$(LIB)/graph_to_dot.o \
+	$(UTIL)/$(LIB)/time.o \
 	$(LIB)/parse.o \
 	$(LIB)/Portal.o \
 
@@ -34,6 +35,7 @@ $(OUT)/donut_maze.s: \
 		$(UTIL)/$(OUT)/get_opts.jnh \
 		$(UTIL)/$(OUT)/Graph.jnh \
 		$(UTIL)/$(OUT)/graph_to_dot.jnh \
+		$(UTIL)/$(OUT)/time.jnh \
 		$(OUT)/parse.jnh \
 		$(OUT)/Portal.jnh \
 		donut_maze.jn

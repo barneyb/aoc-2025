@@ -1,4 +1,8 @@
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     int part_a = 0;
     int part_b = 0;
     while !iseof() {
@@ -10,8 +14,8 @@ pub fn main() {
         part_b = part_b + j;
         free(l);
     }
-    aocd_verify_a("%d", part_a);
-    aocd_verify_b("%d", part_b);
+    *ans_a = itoa(part_a);
+    *ans_b = itoa(part_b);
 }
 
 fn max_joltage(char* bank, int to_check, int to_energize) {

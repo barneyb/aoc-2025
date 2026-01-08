@@ -1,4 +1,8 @@
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     Map* map = Map__from_input();
     int len = strlen(map.grid());
     printf("Map is %dx%d w/ %d grid elements!\n", map.width(), map.height(), len);
@@ -18,7 +22,7 @@ pub fn main() {
     }
 #    map.print();
     printf("Resource value after %d minutes: %d\n", map.ticks(), map.resource_value());
-    aocd_verify_a("%d", map.resource_value());
+    *ans_a = itoa(map.resource_value());
 
     # it started looking cyclic around 500, so get well beyond there
     while map.ticks() < 1000 {
@@ -38,7 +42,7 @@ pub fn main() {
         advance = advance - 1;
     }
     printf("Projected value after %d minutes: %d\n", target_minutes, map.resource_value());
-    aocd_verify_b("%d", map.resource_value());
+    *ans_b = itoa(map.resource_value());
 
     drop_adjacent(adj);
     map.drop();

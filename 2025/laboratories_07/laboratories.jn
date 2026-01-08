@@ -1,4 +1,8 @@
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     int split_count = 0;
     int* beams = null;
     int width;
@@ -35,11 +39,11 @@ pub fn main() {
         free(line);
     }
     printf("Split Count: %d\n", split_count);
-    aocd_verify_a("%d", split_count);
+    *ans_a = itoa(split_count);
     int world_count = get_world_count(beams, width);
     free(beams);
     printf("World Count: %d\n", world_count);
-    aocd_verify_b("%d", world_count);
+    *ans_b = itoa(world_count);
 }
 
 fn get_world_count(int* beams, int width) {

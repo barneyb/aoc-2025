@@ -1,4 +1,8 @@
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     int floor = 0;
     int firstDescent = -1;
     int pos = 0;
@@ -18,7 +22,7 @@ pub fn main() {
         }
     }
     printf("Final floor  : %d\n", floor);
-    aocd_verify_a("%d", floor);
+    *ans_a = itoa(floor);
     printf("First descent: %d\n", firstDescent);
-    aocd_verify_b("%d", firstDescent);
+    *ans_b = itoa(firstDescent);
 }

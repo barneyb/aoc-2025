@@ -99,8 +99,19 @@ fn label_edge(Edge* e) {
     }
 }
 
+bool DOT = false;
+bool NO_PART_TWO = false;
+
 pub fn main(int argc, char** argv) {
     HashMap* opts = get_opts(argc, argv);
+    DOT = opts.contains("--dot");
+    NO_PART_TWO = opts.contains("--no-part-two");
+    opts.drop();
+
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     Map* m = parse();
     printf("# Start: %d (%d:%d)\n", m.start, m.start / m.width + 1, m.start % m.width + 1);
     printf("# Goal : %d (%d:%d)\n", m.goal, m.goal / m.width + 1, m.goal % m.width + 1);
@@ -108,7 +119,7 @@ pub fn main(int argc, char** argv) {
     printf("# Port#: %d\n", ArrayList_size(m.portals));
 
     Graph* g = build_graph(m);
-    if opts.contains("--dot") {
+    if DOT {
         MAP = m; # "close over" m
 #        g.dot_nodes(&label_node,
 #                    &label_edge,
@@ -120,20 +131,19 @@ pub fn main(int argc, char** argv) {
     } else {
         int part_one = path_length_portals(m, g);
         printf("Shortest Path (Portals): %d steps\n", part_one);
-        aocd_verify_a("%d", part_one);
+        *ans_a = itoa(part_one);
 
-        if opts.contains("--no-part-two") {
+        if NO_PART_TWO {
             puts("Skipping part two.");
         } else {
             int part_two = path_length_nesting(m, g);
             printf("Shortest Path (Nesting): %d steps\n", part_two);
-            aocd_verify_b("%d", part_two);
+            *ans_b = itoa(part_two);
         }
     }
 
     g.drop();
     m.drop();
-    opts.drop();
 }
 
 struct State {

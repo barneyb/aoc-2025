@@ -2,15 +2,18 @@
 char* SUCCESSORS = "bcdefghjjkmmnppqrstuvwxyza"; # char[] lookup; SUCCESSORS['m' - 'a'] == 'n'
 
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     char* pw = read_line(); # char[8]
     printf("Initial Password: '%s'\n", pw);
     findNext(pw);
     printf("Next Password   : '%s'\n", pw);
-    aocd_verify_a("%s", pw);
+    *ans_a = strclone(pw);
     findNext(pw);
     printf("Third Password  : '%s'\n", pw);
-    aocd_verify_b("%s", pw);
-    free(pw);
+    *ans_b = pw;
 }
 
 fn findNext(char* pw) {

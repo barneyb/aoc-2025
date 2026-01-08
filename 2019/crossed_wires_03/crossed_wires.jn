@@ -1,4 +1,8 @@
 pub fn main() {
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     # first wire
     HashMap* wire = HashMap__new_owned(&Pt_hash, &Pt_cmp, &Pt_drop, null);
     Input* input = Input__new(read_line());
@@ -41,7 +45,7 @@ pub fn main() {
     wire.drop();
 
     printf("Closest Crossing : %d\n", closest);
-    aocd_verify_a("%d", closest);
+    *ans_a = itoa(closest);
     printf("Earliest Crossing: %d\n", earliest);
-    aocd_verify_b("%d", earliest);
+    *ans_b = itoa(earliest);
 }

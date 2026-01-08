@@ -41,15 +41,21 @@ fn Lights_cmp(Lights* a, Lights* b) {
 
 fn intcmp_rev(int a, int b) { return b - a; }
 
+int conn_count = 1000;
+bool do_svg = false;
+
 pub fn main(int argc, char** argv) {
     HashMap* opts = get_opts(argc, argv);
-    int conn_count = 1000;
     if opts.contains("-n") {
         conn_count = atoi(opts.get("-n"));
     }
-    bool do_svg = opts.contains("--svg");
+    do_svg = opts.contains("--svg");
     opts.drop();
 
+    aocd_run(&solve);
+}
+
+fn solve(char** ans_a, char** ans_b) {
     # I own the `Box`es.
     ArrayList* boxes = ArrayList__new_owned(conn_count, &free);
     while !iseof() { boxes.push(read_box()); }
@@ -57,8 +63,8 @@ pub fn main(int argc, char** argv) {
     if do_svg {
         part_b(boxes, do_svg);
     } else {
-        aocd_verify_a("%d", part_a(conn_count, boxes));
-        aocd_verify_b("%d", part_b(boxes, do_svg));
+        *ans_a = itoa(part_a(conn_count, boxes));
+        *ans_b = itoa(part_b(boxes, do_svg));
     }
 
     boxes.drop();

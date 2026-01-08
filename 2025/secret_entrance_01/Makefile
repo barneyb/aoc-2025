@@ -5,6 +5,7 @@ include ../../make_vars.inc
 PROG = $(BIN)/$(NAME)
 OBJECTS = \
 	$(UTIL)/$(LIB)/aocd.o \
+	$(UTIL)/$(LIB)/time.o \
 
 all: $(PROG) input.txt
 	time $(PROG) < input.txt
@@ -17,6 +18,7 @@ ex2: $(PROG) ex2.txt
 
 $(OUT)/secret_entrance.s: \
 		$(UTIL)/$(OUT)/aocd.jnh \
+		$(UTIL)/$(OUT)/time.jnh \
 		secret_entrance.jn
 	${CATPILE}
 
