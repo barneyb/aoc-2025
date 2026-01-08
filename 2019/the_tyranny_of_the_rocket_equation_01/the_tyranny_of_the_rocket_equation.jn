@@ -3,22 +3,24 @@ pub fn main() {
 }
 
 fn solve(char** ans_a, char** ans_b) {
-    puts("Hello, the_tyranny_of_the_rocket_equation!");
-    int line_count = 0;
-    int char_count = 0;
-    int line_len = -1;
-    char* fmt = "Input is a grid, %d rows by %d columns!\n";
+    int fuel_a = 0;
+    int fuel_b = 0;
     while !iseof() {
         char* line = read_line();
-        int len = strlen(line);
-        if line_len < 0 { line_len = len; }
-        else if line_len != len {
-            fmt = "Input has %d lines averaging ~%d chars each!\n";
-        }
-        char_count = char_count + len;
+        int mass = atoi(line);
         free(line);
-        line_count = line_count + 1;
+        fuel_a = fuel_a + fuel(mass);
+        while true {
+            int f = fuel(mass);
+            if f <= 0 { done; }
+            fuel_b = fuel_b + f;
+            mass = f;
+        }
     }
-    printf(fmt, line_count, char_count / line_count);
-#    *ans_a = itoa();
+    *ans_a = itoa(fuel_a);
+    *ans_b = itoa(fuel_b);
+}
+
+fn fuel(int mass) {
+    return mass / 3 - 2;
 }
