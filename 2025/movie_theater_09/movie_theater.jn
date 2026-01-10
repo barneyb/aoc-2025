@@ -46,7 +46,7 @@ fn solve(char** ans_a, char** ans_b) {
         printf("Largest Colored Rectangle: %d\n", area);
         *ans_b = itoa(area);
     } else {
-        printf("Skipping part b");
+        printf("Skipping part b\n");
     }
 
     tiles.drop();
