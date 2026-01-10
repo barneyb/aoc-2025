@@ -8,8 +8,6 @@ OBJECTS = \
 	$(UTIL)/$(LIB)/get_opts.o \
 	$(UTIL)/$(LIB)/Graph.o \
 	$(UTIL)/$(LIB)/graph_to_dot.o \
-	$(UTIL)/$(LIB)/SortedMap.o \
-	$(UTIL)/$(LIB)/string.o \
 	$(UTIL)/$(LIB)/time.o \
 	$(LIB)/parse.o \
 	$(LIB)/Portal.o \
@@ -44,8 +42,6 @@ $(OUT)/donut_maze.s: \
 	${CATPILE}
 
 $(OUT)/parse.s: \
-		$(UTIL)/$(OUT)/SortedMap.jnh \
-		$(UTIL)/$(OUT)/string.jnh \
 		$(OUT)/Portal.jnh \
 		$(OUT)/donut_maze.jnh \
 		parse.jn

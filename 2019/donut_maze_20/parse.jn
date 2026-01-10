@@ -1,7 +1,6 @@
 struct ArrayList;
 struct Map;
 struct HashMap;
-struct SortedMap;
 
 struct Parse {
     int width,
@@ -9,7 +8,7 @@ struct Parse {
     int goal,
     ArrayList* open_tiles,
     # Map<int, int>, where keys are encoded labels
-    SortedMap* ends,
+    HashMap* ends,
     # Map<int, ArrayList<int>>, where keys are ids
     HashMap* adj,
     ArrayList* portals,
@@ -21,7 +20,7 @@ fn Parse__new() {
     parse.start = -1;
     parse.goal = -1;
     parse.open_tiles = ArrayList__new(10);
-    parse.ends = SortedMap__new(null);
+    parse.ends = HashMap__new(null, null);
     parse.adj = HashMap__new_owned(null, null, null, &ArrayList_drop);
     parse.portals = ArrayList__new_owned(10, &Portal_drop);
     return parse;
@@ -47,7 +46,7 @@ fn Parse_portal(Parse* self, char a, char b, int u, bool is_inside) {
         return;
     } }
 #    printf("  %c%c @ %i (%d:%d)\n", a, b, u, u / self.width + 1, u % self.width + 1);
-    SortedMap* ends = self.ends;
+    HashMap* ends = self.ends;
     int key = a * 256 + b; # todo: bitwise ops...
     int v = ends.put(key, u);
     if v != null {
@@ -64,12 +63,12 @@ fn Parse_portal(Parse* self, char a, char b, int u, bool is_inside) {
 
 fn Parse_into_map(Parse* self) {
     Map* m = Map__new(self.width, self.start, self.goal, self.open_tiles, self.adj, self.portals);
-    int open_portals = SortedMap_size(self.ends);
+    int open_portals = HashMap_size(self.ends);
     if open_portals != 0 {
         eprintf("Not all portals were closed; %d remain open\n", open_portals);
         exit(2);
     }
-    SortedMap_drop(self.ends);
+    HashMap_drop(self.ends);
     free(self);
     return m;
 }

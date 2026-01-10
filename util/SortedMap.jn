@@ -213,11 +213,8 @@ fn Mut_put(Mut* mut, Node* curr, Node* to_add) {
     void* cmp = mut.cmp;
     int c = cmp(to_add.key, curr.key);
     if c == 0 {
-        mut.value = curr.value;
-        curr.value = to_add.value;
-        to_add.value = null;
-        mut.drop_node(to_add);
-        return curr;
+        eprintf("Replacing a value with put is unimplemented\n"); # todo
+        exit(1);
     }
     if c < 0 { curr.left = mut.put(curr.left, to_add); }
     else     { curr.right = mut.put(curr.right, to_add); }
